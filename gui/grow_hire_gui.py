@@ -109,7 +109,7 @@ class GrowHireGUI(QWidget):
         action_layout = QVBoxLayout()
 
         # Open LinkedIn Button
-        self.login_button = QPushButton("🌐 Open LinkedIn & Login")
+        self.login_button = QPushButton("🌐 Open LinkedIn Login")
         self.login_button.clicked.connect(self.growhire_bot.linkedin_navigator.open_linkedin)
         action_layout.addWidget(self.login_button)
 
