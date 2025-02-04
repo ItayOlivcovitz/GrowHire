@@ -1,0 +1,14 @@
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+
+# Ignore IDE-specific files
+*.iml
+.idea/
+.vscode/
+
+# Ignore build and cache files
+build/
+dist/
