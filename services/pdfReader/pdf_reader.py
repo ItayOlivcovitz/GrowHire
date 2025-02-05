@@ -9,13 +9,33 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class PDFReader:
-    def __init__(self, file_path="GrowHire\\resume\\Resume.pdf"):
+    def __init__(self, file_path=None):
         """Initializes the PDFReader with the correct absolute file path."""
-        script_dir = os.path.dirname(os.path.abspath(__file__))  # ✅ Get script directory
         
-        # ✅ Ensure file_path is appended correctly
-        self.file_path = os.path.abspath(os.path.join(script_dir, "Resume.pdf"))
+        # Detect if running inside Docker
+        is_docker = os.path.exists("/.dockerenv")
 
+        # Default path based on environment
+        if file_path is None:
+            if is_docker:
+                self.file_path = "/app/resume/Resume.pdf"  # ✅ Use forward slashes for Linux/Docker
+            else:
+                self.file_path = os.path.join("resume", "Resume.pdf")  # Windows & Linux compatible
+        else:
+            self.file_path = file_path  # Use provided path
+
+        # ✅ Force Unix-style paths when running in Docker
+        if is_docker:
+            self.file_path = self.file_path.replace("\\", "/")
+
+        # ✅ Convert to absolute path
+        self.file_path = os.path.abspath(self.file_path)
+
+        # ✅ Check if file exists
+        if not os.path.exists(self.file_path):
+            raise FileNotFoundError(f"❌ PDF file not found: {self.file_path}")
+
+        print(f"✅ PDFReader initialized with file: {self.file_path}")
         self.text = None  # Placeholder for extracted text
 
     def read_pdf(self):

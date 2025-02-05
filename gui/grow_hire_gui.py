@@ -18,16 +18,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 
 class GrowHireGUI(QWidget):
-    def __init__(self):
+    def __init__(self,growhire_bot: GrowHireBot):
         super().__init__()
 
-        # ✅ Load resume path from `.env` **BEFORE** initializing `GrowHireBot`
-        self.resume_path = os.getenv("RESUME_PATH", "GrowHire/resume/Resume.pdf")
-
-        logger.info(f"📄 Using resume path: {self.resume_path}")
-
         # ✅ Initialize LinkedIn Bot and GrowHireBot with correct resume path
-        self.growhire_bot = GrowHireBot()
+        self.growhire_bot = growhire_bot
 
         self.initUI()
 
@@ -215,9 +210,6 @@ class GrowHireGUI(QWidget):
 
     def search_jobs(self):
         """Extracts selected filters and performs a job search."""
-        if not self.resume_path:
-            logger.error("❌ Please upload a resume before searching for jobs.")
-            return
 
         job_title = self.job_title_field.text().strip() or "Software Engineer"
         location = self.location_field.text().strip() or "Israel"
@@ -247,17 +239,17 @@ class GrowHireGUI(QWidget):
 
 
         # Extract job descriptions
-        job_descriptions = self.growhire_bot.job_scraper.extract_job_descriptions(num_pages=num_pages)
+        job_descriptions = self.growhire_bot.extract_job_descriptions(num_pages=num_pages)
 
         if not job_descriptions:
             logger.warning("⚠️ No job descriptions found. Exiting match analysis.")
             return []
 
         # Evaluate matches
-        job_match_results = self.growhire_bot.job_scraper.evaluate_job_matches(job_descriptions)
+        job_match_results = self.growhire_bot.evaluate_job_matches(job_descriptions)
        
         # Save match results
-        self.growhire_bot.job_storage.save_job_matches_to_db(job_match_results)
+        self.growhire_bot.save_job_matches_to_db(job_match_results)
 
         logger.info("✅ Job match analysis completed for all jobs.")
         return job_match_results

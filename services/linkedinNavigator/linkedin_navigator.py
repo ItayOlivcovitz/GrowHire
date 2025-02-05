@@ -1,7 +1,9 @@
 import os
 import time
 import logging
-import requests
+import tempfile
+import shutil
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -9,8 +11,8 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait  # ✅ Import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC  # ✅ Import EC
-from utils.env_config import EnvConfigLoader  # Import your class
 import urllib.parse
+
 
 
 
@@ -23,28 +25,48 @@ class LinkedInNavigator:
 
     def __init__(self):
         """Automatically starts the WebDriver when an instance is created."""
-        self.driver = self.start_driver()
+        self.driver = self.start_driver()  # ✅ Calls the method correctly
         if not self.driver:
             logger.error("🚫 Unable to start WebDriver. Exiting.")
-            exit(1)  # Exit if WebDriver failed to start
+            exit(1)
 
     def start_driver(self):
         """Starts Chrome WebDriver and returns the driver instance."""
         try:
             logger.info("🚀 Starting Chrome WebDriver...")
             options = webdriver.ChromeOptions()
+
+            # Avoid bot detection
             options.add_argument("--disable-blink-features=AutomationControlled")
             options.add_argument("--incognito")
             options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
             options.add_experimental_option("excludeSwitches", ["enable-automation"])
             options.add_experimental_option("useAutomationExtension", False)
 
+            # Detect if running in Docker
+            is_docker = os.path.exists("/.dockerenv")
+
+            if is_docker:
+                logger.info("🛠️ Running inside Docker. Applying Docker-specific Chrome settings...")
+                print("🚢 Running inside Docker!")
+                options.add_argument("--no-sandbox")  # Bypass OS security model
+                options.add_argument("--disable-dev-shm-usage")  # Prevent crashes in low-memory environments
+                options.add_argument("--disable-gpu")  # Disable GPU hardware acceleration
+                options.add_argument("--start-maximized")  # Ensure the window is visible
+                options.add_argument("--window-size=1920,1080")  # Set a fixed window size
+                options.add_argument("--display=:99")  # ✅ Run Chrome inside Xvfb virtual display
+            else:
+                print("🖥️ Running locally!")
+
+            # ✅ Use WebDriver Manager to automatically download the correct driver
             driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-            logger.info("✅ Chrome WebDriver initialized successfully.")
+
+            logger.info("✅ Chrome WebDriver initialized successfully and running in visible mode.")
             return driver
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Chrome WebDriver: {e}")
+            logger.error(f"❌ Failed to initialize Chrome WebDriver: {e}", exc_info=True)
             return None
+
 
     def stop_driver(self):
         """Stops the Chrome WebDriver."""

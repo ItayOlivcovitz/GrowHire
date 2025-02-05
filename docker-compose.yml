@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8  # ✅ Use official MySQL 8 image
+    container_name: mysql_container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: growhire
+      MYSQL_USER: growhire_user
+      MYSQL_PASSWORD: growhire_pass
+      MYSQL_INITDB_SKIP_TZINFO: "1"  # ✅ Prevent timezone warnings
+    command: --init-file /docker-entrypoint-initdb.d/init.sql  # ✅ Ensure init.sql executes
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql  # ✅ Persistent database storage
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # ✅ Ensure correct path & read-only
+      - ./my.cnf:/etc/mysql/my.cnf:ro  # ✅ Apply custom MySQL configuration
+    networks:
+      - growhire_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+
+  app:
+    build: .
+    container_name: growhire_app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /app
+    environment:
+      DATABASE_URL: mysql+pymysql://root:root@db:3306/growhire  # ✅ Ensure DB uses correct MySQL host
+      DISPLAY: ":99"  # ✅ Use Xvfb virtual display instead of :0
+      QT_X11_NO_MITSHM: "1"  # Helps mitigate issues with MIT-SHM when using X11
+    ports:
+      - "5000:5000"  # ✅ Web application
+      - "4444:4444"  # ✅ Selenium/WebDriver (if needed)
+      - "5900:5900"  # ✅ VNC access to GUI
+      - "9222:9222"  # ✅ Chrome Debugging Port (if needed)
+      - "6080:6080"  # ✅ noVNC Web Access
+    volumes:
+      - ./src:/app/src
+      - ./resume:/app/resume
+    networks:
+      - growhire_network
+    command: ["/bin/bash", "-c", "
+      Xvfb :99 -screen 0 1920x1080x24 & sleep 2 && \
+      setxkbmap us && \
+      mkdir -p ~/.fluxbox && \
+      echo 'session.screen0.toolbar.visible: false' > ~/.fluxbox/init && \
+      fluxbox & \
+      x11vnc -forever -display :99 -rfbport 5900 -bg && \
+      nohup websockify --web /usr/share/novnc/ 6080 localhost:5900 > /var/log/websockify.log 2>&1 & \
+      /app/venv/bin/python3 main.py"]
+
+volumes:
+  mysql_data:
+
+networks:
+  growhire_network:
