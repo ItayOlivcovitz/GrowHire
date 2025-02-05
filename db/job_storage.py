@@ -1,8 +1,13 @@
 import os  # Ensure this import is present
 import logging
 from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, func
+from sqlalchemy import text
+
 from sqlalchemy.orm import sessionmaker, declarative_base
-from datetime import datetime
+import time
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.sql import text
+
 
 
 # ✅ Configure Logger
@@ -32,17 +37,49 @@ class JobDescription(Base):
 class JobStorage:
     """Handles saving job details to the database using SQLAlchemy."""
 
-    def __init__(self, db_url=None):
-        """Initialize database storage."""
-        # Use MySQL connection string (Update with your credentials)
-        self.db_url = db_url or os.getenv("DATABASE_URL", "mysql+pymysql://root:root@localhost:3306/growhire")  # Default to MySQL
-        self.engine = create_engine(self.db_url, echo=False)  # Create engine for MySQL connection
-        self.Session = sessionmaker(bind=self.engine)  # Create sessionmaker bound to the engine
+    def __init__(self, db_url=None, retries=5, delay=5):
+        """Initialize database storage with Docker detection and retries."""
         
-        # Create tables in the database
-        Base.metadata.create_all(self.engine)
+        # ✅ Detect if running inside Docker
+        IS_DOCKER = os.path.exists("/.dockerenv")
 
-        logger.info(f"✅ Database Storage Initialized: {self.db_url}")
+        # ✅ Determine the correct database host
+        DB_HOST = "db" if IS_DOCKER else "localhost"
+
+        # ✅ Set database connection URL and enforce pymysql usage
+        self.db_url = db_url or os.getenv(
+            "DATABASE_URL", f"mysql://root:root@{DB_HOST}:3306/growhire"
+        )
+        
+        # ✅ Ensure pymysql is explicitly used
+        if self.db_url.startswith("mysql://"):
+            self.db_url = self.db_url.replace("mysql://", "mysql+pymysql://")
+
+        logger.info(f"🔍 Using Database URL: {self.db_url}")
+
+        # ✅ Try connecting to the database with retries
+        self.engine = self.create_db_engine_with_retries(retries, delay)
+        self.Session = sessionmaker(bind=self.engine)
+
+        logger.info("✅ Database Storage Initialized")
+
+    def create_db_engine_with_retries(self, retries=5, delay=15):
+            """Try connecting to the database with retries."""
+            for attempt in range(1, retries + 1):
+                try:
+                    engine = create_engine(self.db_url, echo=False)
+                    with engine.connect() as connection:
+                        connection.execute(text("SELECT 1"))  # Test query
+                    logger.info(f"✅ Database connected on attempt {attempt}/{retries}.")
+                    return engine
+                except OperationalError as e:
+                    logger.error(f"❌ Database connection failed (Attempt {attempt}/{retries}): {e}")
+                    if attempt < retries:
+                        logger.info(f"🔄 Retrying in {delay} seconds...")
+                        time.sleep(delay)
+                    else:
+                        logger.error("🚨 Database connection failed after multiple attempts.")
+                        raise
 
     def save_to_db(self, job_data):
         """Saves a job description to the database."""
@@ -73,6 +110,26 @@ class JobStorage:
         session.close()  # Close session
         return job_descriptions
     
+    def is_db_connected(self, retries=5, delay=5):
+        """Check if the database connection is active, with retries if needed."""
+        session = self.Session()
+        
+        for attempt in range(1, retries + 1):
+            try:
+                session.execute(text("SELECT 1"))  # Simple test query
+                session.close()
+                logger.info(f"✅ Database connection is active (Attempt {attempt}/{retries}).")
+                return True
+            except OperationalError as e:
+                logger.error(f"❌ Database connection failed (Attempt {attempt}/{retries}): {e}")
+                
+                if attempt < retries:
+                    logger.info(f"🔄 Retrying in {delay} seconds...")
+                    time.sleep(delay)
+                else:
+                    logger.error("🚨 Database is not available after multiple attempts.")
+                    return False
+
     def save_job_matches_to_db(self, job_match_results):
         """Saves job descriptions with AI analysis results to the database."""
         session = self.Session()
@@ -106,3 +163,5 @@ class JobStorage:
         finally:
             session.close()
 
+
+       

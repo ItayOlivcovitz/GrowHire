@@ -20,10 +20,25 @@ class GrowHireBot:
         self._job_storage = JobStorage()
         self._job_pdf_reader = PDFReader() 
         
+    
+    def extract_job_descriptions(self, num_pages=1):
+        """Triggers job descriptions extraction through JobScraper."""
+        return self._job_scraper.extract_job_descriptions(num_pages=num_pages)
+    
+    
+    def evaluate_job_matches(self, job_descriptions):
+        """Triggers job matches evaluation through JobScraper."""
+        return self._job_scraper.evaluate_job_matches(job_descriptions)
+    
+    
+    def save_job_matches_to_db(self, job_match_results):
+        """Saves job descriptions with AI analysis results to the database."""
+        self._job_storage.save_job_matches_to_db(job_match_results)
 
     def set_resume_path(self, path):
             """Sets the resume path and performs any additional initialization if necessary."""
             self.resume_path = path    
+
 
     def run(self, job_title, location, filters):
         """Runs the job search and evaluation workflow."""

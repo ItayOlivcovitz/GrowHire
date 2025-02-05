@@ -38,7 +38,7 @@ class EnvConfigLoader:
             logging.critical("🚨 Failed to load OpenAI API Key. Check your .env file.")
 
         if resume_path:
-            logging.info(f"✅ Resume path loaded: {resume_path}")
+            logging.info(f"✅ Resume path loaded: {resume_path} from env.")
         else:
             logging.warning("⚠️ RESUME_PATH not found in .env file. Default resume path will be used.")
 
