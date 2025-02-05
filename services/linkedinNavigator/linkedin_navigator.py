@@ -55,14 +55,24 @@ class LinkedInNavigator:
                 options.add_argument("--start-maximized")  # Ensure the window is visible
                 options.add_argument("--window-size=1920,1080")  # Set a fixed window size
                 options.add_argument("--display=:99")  # ✅ Run Chrome inside Xvfb virtual display
+                
+                # 🛠️ Fix "session not created" issue by using a unique user data directory
+                unique_data_dir = f"/tmp/chrome-user-data-{os.getpid()}"
+                options.add_argument(f"--user-data-dir={unique_data_dir}")
+
+                # Ensure /tmp directory has proper permissions
+                os.makedirs(unique_data_dir, exist_ok=True)
+                os.chmod(unique_data_dir, 0o777)  # Ensure it is writable
+
             else:
                 print("🖥️ Running locally!")
 
             # ✅ Use WebDriver Manager to automatically download the correct driver
             driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-            logger.info("✅ Chrome WebDriver initialized successfully and running in visible mode.")
+            logger.info("✅ Chrome WebDriver initialized successfully.")
             return driver
+
         except Exception as e:
             logger.error(f"❌ Failed to initialize Chrome WebDriver: {e}", exc_info=True)
             return None
