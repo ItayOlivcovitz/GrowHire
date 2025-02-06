@@ -3,9 +3,10 @@ version: "3.8"
 services:
   db:
     image: mysql:8  # ✅ Use the official MySQL 8 image instead of building one
-    container_name: mysql_container
+    container_name: mysql_db
     restart: always
     environment:
+      TZ: Asia/Jerusalem
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: growhire
       MYSQL_USER: growhire_user
@@ -15,7 +16,9 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql  # ✅ Persistent database storage
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # ✅ Ensure correct path and read-only
-      - ./my.cnf:/etc/mysql/my.cnf:ro  # ✅ Mount custom config instead of copying
+      - ./db/my.cnf:/etc/mysql/my.cnf:ro  # ✅ Mount custom config instead of copying
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - growhire_network
     healthcheck:
