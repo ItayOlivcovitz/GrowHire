@@ -1,8 +1,10 @@
 import time
 import logging
-import urllib.parse
 import re
 import os
+import concurrent.futures
+import threading
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,9 +12,6 @@ from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException, NoSuchElementException
 from services.chatGpt import chat_gpt
-
-
-from services.linkedinNavigator.linkedin_navigator import LinkedInNavigator
 from services.pdfReader.pdf_reader import PDFReader
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ class JobScraper:
         self.resume_text = self.pdf_reader.get_text()
 
     def extract_job_descriptions(self, num_pages=1):
-        """Extracts job descriptions dynamically from LinkedIn and moves through multiple pages."""
+        """Extracts job descriptions dynamically from LinkedIn in parallel using ThreadPoolExecutor."""
         job_list = []
         seen_jobs = set()
 
@@ -46,7 +45,7 @@ class JobScraper:
             logger.info("🔄 Scrolling inside the job list container...")
 
             # ✅ Scroll multiple times to ensure jobs load efficiently
-            for _ in range(5):  # Reduced iterations
+            for _ in range(5):
                 jobs = self.driver.find_elements(By.XPATH, "//div[@data-job-id]")
                 new_jobs = [job for job in jobs if job.get_attribute("data-job-id") not in seen_jobs]
 
@@ -64,82 +63,22 @@ class JobScraper:
             )
 
             logger.info(f"✅ Found {len(jobs)} jobs on Page {page + 1}.")
+            logger.info(f"🔍 [DEBUG] Active Threads Before Extraction: {threading.active_count()}")
 
-            for index, job in enumerate(jobs, start=1):
-                try:
-                    self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", job)
-                    job.click()
+            # ✅ Extract job descriptions in parallel
+            with concurrent.futures.ThreadPoolExecutor(max_workers=7) as executor:
+                results = executor.map(self.extract_single_job, jobs, range(1, len(jobs) + 1))
 
-                    # ✅ Wait for the job title to appear instead of using sleep
-                    WebDriverWait(self.driver, 3).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, ".job-details-jobs-unified-top-card__job-title"))
-                    )
+            # ✅ Collect results from threads
+            for job_data in results:
+                if job_data:
+                    job_list.append(job_data)
 
-                    # ✅ Extract Job Title
-                    job_title = self.driver.execute_script("""
-                        let titleElement = document.querySelector('.job-details-jobs-unified-top-card__job-title');
-                        return titleElement ? titleElement.innerText.trim() : "Unknown Title";
-                    """)
-
-                    # ✅ Extract Company Name Using Index (Original Code)
-                    company_name = self.driver.execute_script(f"""
-                        let jobCards = document.querySelectorAll('.job-card-container--clickable');
-                        if (jobCards.length >= {index}) {{
-                            let selectedJob = jobCards[{index - 1}];  
-                            let companyElement = selectedJob.querySelector('.topcard__flavor, .artdeco-entity-lockup__subtitle');
-                            return companyElement ? companyElement.innerText.trim() : "Unknown Company";
-                        }} else {{
-                            return "Unknown Company";
-                        }}
-                    """)
-
-                    # ✅ Extract Job Location Using Index (Original Code)
-                    job_location = self.driver.execute_script(f"""
-                        let jobCards = document.querySelectorAll('.job-card-container--clickable');
-                        if (jobCards.length >= {index}) {{
-                            let selectedJob = jobCards[{index - 1}];
-                            let locationElement = selectedJob.querySelector('.job-card-container__metadata-wrapper li span[dir="ltr"]');
-                            return locationElement ? locationElement.innerText.trim() : "Unknown Location";
-                        }} else {{
-                            return "Unknown Location";
-                        }}
-                    """)
-
-                    # ✅ Extract job URL using `data-job-id`
-                    job_id = job.get_attribute("data-job-id")
-                    job_full_url = f"https://www.linkedin.com/jobs/view/{job_id}/" if job_id else "Unknown URL"
-
-                    # ✅ Extract number of connections
-                    connections_text = self.driver.execute_script("""
-                        let connectionsElement = document.querySelector(
-                            ".job-card-container__job-insight-text, .job-details-jobs-unified-top-card__connections"
-                        );
-                        return connectionsElement ? connectionsElement.innerText.trim() : "0 connections";
-                    """)
-
-                    connections = int(re.search(r"(\d+)", connections_text).group(1)) if "connection" in connections_text.lower() else 0
-
-                    # ✅ Extract Job Description
-                    job_description = self.driver.execute_script("""
-                        let descriptionElement = document.querySelector("#job-details");
-                        return descriptionElement ? descriptionElement.innerText.trim() : "Not Found";
-                    """)
-
-                    job_list.append({
-                        "job_title": job_title,
-                        "company_name": company_name,
-                        "job_location": job_location,
-                        "job_url": job_full_url,
-                        "connections": connections,
-                        "job_description": job_description
-                    })
-
-                except Exception as e:
-                    logger.error(f"❌ Error extracting job {index}: {e}")
+            logger.info(f"🔍 [DEBUG] Active Threads After Extraction: {threading.active_count()}")
 
             # ✅ Move to the next page
             next_page_button = self.driver.find_elements(By.CSS_SELECTOR, "button.artdeco-button.jobs-search-pagination__button--next")
-            
+
             if next_page_button and page < num_pages - 1:
                 logger.info(f"➡️ Moving to Next Page ({page + 2})...")
                 self.driver.execute_script("arguments[0].click();", next_page_button[0])
@@ -149,6 +88,96 @@ class JobScraper:
 
         logger.info("✅ Job descriptions extraction completed.")
         return job_list
+
+
+    def extract_single_job(self, job, index):
+        """Extracts a single job description dynamically using Selenium."""
+        try:
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", job)
+            job.click()
+
+            # ✅ Wait for job title to appear (Max 5 seconds)
+            WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".job-details-jobs-unified-top-card__job-title"))
+            )
+
+            # ✅ Extract Job Title
+            job_title = self.driver.execute_script("""
+                let titleElement = document.querySelector('.job-details-jobs-unified-top-card__job-title');
+                return titleElement ? titleElement.innerText.trim() : "Unknown Title";
+            """)
+            if not job_title:
+                logger.warning(f"⚠️ Job {index}: Title missing, setting as 'Unknown Title'")
+                job_title = "Unknown Title"
+
+            company_name = self.driver.execute_script(f"""
+                    let jobCards = document.querySelectorAll('.job-card-container--clickable');
+                    if (jobCards.length >= {index}) {{
+                        let selectedJob = jobCards[{index - 1}];  
+                        let companyElement = selectedJob.querySelector('.topcard__flavor, .artdeco-entity-lockup__subtitle');
+                        return companyElement ? companyElement.innerText.trim() : "Unknown Company";
+                    }} else {{
+                        return "Unknown Company";
+                    }}
+                """)
+            if not company_name:
+                logger.warning(f"⚠️ Job {index}: Company name missing, setting as 'Unknown Company'")
+                company_name = "Unknown Company"
+
+            # ✅ Extract Job Location
+            job_location = self.driver.execute_script("""
+                let locationElement = document.querySelector('.job-card-container__metadata-wrapper li span[dir="ltr"]');
+                return locationElement ? locationElement.innerText.trim() : null;
+            """)
+            if not job_location:
+                logger.warning(f"⚠️ Job {index}: Location missing, setting as 'Unknown Location'")
+                job_location = "Unknown Location"
+
+            # ✅ Extract Job URL
+            job_id = job.get_attribute("data-job-id")
+            job_full_url = f"https://www.linkedin.com/jobs/view/{job_id}/" if job_id else "Unknown URL"
+
+            # ✅ Extract Number of Connections
+            connections_text = self.driver.execute_script("""
+                let connectionsElement = document.querySelector(
+                    ".job-card-container__job-insight-text, .job-details-jobs-unified-top-card__connections"
+                );
+                return connectionsElement ? connectionsElement.innerText.trim() : "0 connections";
+            """)
+            connections = 0  # Default if parsing fails
+            try:
+                match = re.search(r"(\d+)", connections_text)
+                if match:
+                    connections = int(match.group(1))
+            except Exception:
+                logger.warning(f"⚠️ Job {index}: Could not extract number of connections")
+
+            # ✅ Extract Job Description
+            job_description = self.driver.execute_script("""
+                let descriptionElement = document.querySelector("#job-details");
+                return descriptionElement ? descriptionElement.innerText.trim() : null;
+            """)
+            if not job_description:
+                logger.warning(f"⚠️ Job {index}: Job description missing, setting as 'Not Found'")
+                job_description = "Not Found"
+
+            # ✅ Ensure everything is a string
+            return {
+                "job_title": str(job_title),
+                "company_name": str(company_name),
+                "job_location": str(job_location),
+                "job_url": str(job_full_url),
+                "connections": connections,  # Keep this as an integer for sorting
+                "job_description": str(job_description)
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Error extracting job {index}: {e}")
+            return None
+
+        finally:
+            logger.info(f"✅ Job {index}: Extraction complete.")
+
 
 
 
@@ -195,12 +224,13 @@ class JobScraper:
         logger.error("❌ Match Score not found in response.")
         return None
     
-    def evaluate_job_matches(self, job_descriptions):
-        """Evaluates job matches using ChatGPT for a list of job descriptions and saves scores to each description.
 
+    def evaluate_job_matches(self, job_descriptions):
+        """Evaluates job matches using ChatGPT concurrently for multiple job descriptions.
+        
         Args:
             job_descriptions (list): List of job descriptions to evaluate.
-
+        
         Returns:
             list: List of dictionaries containing job descriptions and extracted match scores.
         """
@@ -209,14 +239,13 @@ class JobScraper:
             return []
 
         job_match_results = []
-        
-        for index, job_description in enumerate(job_descriptions, start=1):
+
+        # ✅ Define a function to evaluate a single job description
+        def evaluate_single_job(index, job_description):
+            """Evaluates a single job description and returns results."""
             if not job_description:
                 logger.warning(f"⚠️ Skipping job {index}: No description available.")
-                job_match_results.append({"index": index, "description": None, "score": None})
-                continue
-
-            #logger.info(f"🔍 Evaluating job {index}/{len(job_descriptions)}...")
+                return {"index": index, "description": None, "score": None}
 
             # ✅ Prepare prompt
             prompt = f"""
@@ -246,42 +275,36 @@ class JobScraper:
             - **Strengths:** (List)
             - **Recommendations:** (How to improve)
             - **Interest Level:** High/Moderate/Low (Based on the conditions)
-"""
+            """
 
-
-            # ✅ Send prompt to ChatGPT using GPT-4o-mini
+            # ✅ Send request to ChatGPT
             response = self.chat_gpt.ask(prompt, model="gpt-4o-mini")
 
-            # ✅ Check response validity
-            response_text = None
+            # ✅ Validate response
+            response_text = response.get("response", "").strip() if isinstance(response, dict) else str(response).strip()
 
-            if isinstance(response, dict) and "response" in response:
-                response_text = response["response"].strip()
-            elif isinstance(response, str):
-                response_text = response.strip()
-            else:
-                logger.error(f"❌ Invalid response format from ChatGPT: {response}")
-                job_match_results.append({"index": index, "description": job_description, "score": None})
-                continue
+            if not response_text:
+                logger.error(f"❌ Invalid response format from ChatGPT for job {index}: {response}")
+                return {"index": index, "description": job_description, "score": None}
 
-           # logger.info(f"✅ ChatGPT Response:\n{response_text}")
+            # ✅ Extract match score
+            match_score = JobScraper.extract_match_score(response_text)
 
-            # ✅ Use extract_match_score function for match score extraction
-            match_score = JobScraper.extract_match_score(response_text)  # ✅ Use static method
-
-            # ✅ Store the match result
-            job_match_results.append({
+            return {
                 "index": index,
-                **job_description,  
+                **job_description,
                 "chat_gpt_response": response_text,
                 "score": match_score
-            })
-            
-            logger.info(f"✅ evaluated job {index}")
+            }
 
+        # ✅ Use ThreadPoolExecutor to process jobs in parallel
+        max_threads = min(10, len(job_descriptions))  # Prevent too many concurrent requests
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+            futures = {executor.submit(evaluate_single_job, index, job_desc): index for index, job_desc in enumerate(job_descriptions, start=1)}
+            for future in concurrent.futures.as_completed(futures):
+                job_match_results.append(future.result())
 
-           
-
-        logger.info("✅ Job matching completed!")
+        logger.info("✅ All jobs evaluated in parallel.")
         return job_match_results
+
 
