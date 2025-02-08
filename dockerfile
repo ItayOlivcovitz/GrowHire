@@ -1,20 +1,19 @@
-# Use the official Selenium standalone Chrome image 
+# Use the official Selenium standalone Chrome image as the base
 FROM selenium/standalone-chrome:latest
 
-# Set working directory inside the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Switch to root user for package installation
+# Switch to the root user for package installation
 USER root
 
-# Install dependencies, including Python and GUI tools
-RUN apt-get update && apt-get install -y \
-    software-properties-common \
+# Update and install only the necessary packages without extra recommendations.
+# Note: 'libgl1-mesa-glx' has been removed because it is not available.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     python3-pip \
     libegl1 \
     libopengl0 \
-    libgl1-mesa-dev \
     libxkbcommon-x11-0 \
     libxcb-xinerama0 \
     libxcb-cursor0 \
@@ -39,44 +38,41 @@ RUN apt-get update && apt-get install -y \
     websockify \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ✅ Ensure Python is available
-RUN which python3
+# (Optional) Verify that python3 is available
+RUN which python3 && python3 --version
 
-# ✅ Create Python virtual environment
-RUN python3 -m venv /app/venv
+# Create a Python virtual environment and upgrade pip
+RUN python3 -m venv /app/venv \
+    && /app/venv/bin/python3 -m pip install --no-cache-dir --upgrade pip
 
-# ✅ Use the virtual environment for Python
+# Ensure that the virtual environment's binaries are in the PATH.
 ENV PATH="/app/venv/bin:$PATH"
 
-# ✅ Upgrade pip
-RUN /app/venv/bin/python3 -m pip install --no-cache-dir --upgrade pip
+# Copy the requirements file to leverage Docker caching
+COPY requirements.txt .
 
-# ✅ Install dependencies inside the virtual environment
-COPY requirements.txt .  
-RUN /app/venv/bin/python3 -m pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies inside the virtual environment.
+RUN pip install --no-cache-dir -r requirements.txt
 
-# ✅ Create necessary directories
+# Create the directory for the resume and copy the Resume.pdf file.
 RUN mkdir -p /app/resume
-
-# ✅ Copy `Resume.pdf` into the container
 COPY resume/Resume.pdf /app/resume/Resume.pdf
 
-# ✅ Copy the entire project
-COPY . . 
+# Copy the rest of the application code into the container.
+COPY . .
 
-# Expose necessary ports
+# Expose the necessary ports for Selenium, VNC, and noVNC.
 EXPOSE 4444 5900 9222 6080
 
-# Set environment variables
+# Set the DISPLAY environment variable for Xvfb.
 ENV DISPLAY=:99
 
-# ✅ Start GUI-related services properly before running the main Python app
-CMD /bin/bash -c " \
+# Start the required GUI services and run the main Python application.
+CMD ["/bin/bash", "-c", "\
     Xvfb :99 -screen 0 1920x1080x24 & \
     sleep 2 && \
     setxkbmap us && \
     fluxbox & \
     x11vnc -forever -display :99 -rfbport 5900 -bg && \
     websockify --web /usr/share/novnc/ --cert=none --ssl-only=false --idle-timeout=120 6080 localhost:5900 & \
-    exec /app/venv/bin/python3 main.py"
-
+    exec /app/venv/bin/python3 main.py"]
