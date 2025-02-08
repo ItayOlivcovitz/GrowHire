@@ -81,35 +81,6 @@ class JobStorage:
                         logger.error("🚨 Database connection failed after multiple attempts.")
                         raise
 
-    def save_to_db(self, job_data):
-        """Saves a job description to the database."""
-        session = self.Session()  # Create a new session
-        try:
-            # ✅ Remove 'created_at' (MySQL auto-fills it)
-            job_data.pop("created_at", None)
-
-            # ✅ Convert dictionary to JobDescription object
-            job_description = JobDescription(**job_data)  
-            session.add(job_description)  # Add job description to the session
-            
-            session.commit()  # ✅ Ensure the transaction is committed
-            
-            logger.info(f"✅ Job description saved to database: {job_description.job_title} at {job_description.company_name}")
-
-        except Exception as e:
-            session.rollback()  # ✅ Ensure rollback only happens on error
-            logger.error(f"❌ Error saving job description: {e}")
-        
-        finally:
-            session.close()  # ✅ Always close the session
-
-    def get_jobs(self):
-        """Fetch all job descriptions from the database."""
-        session = self.Session()  # Create a new session
-        job_descriptions = session.query(JobDescription).all()  # Query all job descriptions
-        session.close()  # Close session
-        return job_descriptions
-    
     def is_db_connected(self, retries=5, delay=5):
         """Check if the database connection is active, with retries if needed."""
         session = self.Session()
