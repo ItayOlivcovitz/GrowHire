@@ -37,19 +37,17 @@ class PDFReader:
 
         print(f"✅ PDFReader initialized with file: {self.file_path}")
         self.text = None  # Placeholder for extracted text
-
     def read_pdf(self):
-        """Extracts text from the given PDF, starting from 'ABOUT ME' onwards."""
+        """Extracts text from the entire PDF document."""
         if not os.path.exists(self.file_path):
             logger.error(f"❌ PDF file not found: {self.file_path}")
             return None
 
         try:
             logger.info(f"📄 Reading PDF file: {self.file_path}")
-            extracted_text = []
+            full_text = ""  # Store all extracted text
 
             with fitz.open(self.file_path) as doc:
-                full_text = ""  # Store all extracted text
                 for page in doc:
                     text = page.get_text("text").strip()
 
@@ -64,23 +62,18 @@ class PDFReader:
 
                     full_text += f"\n{text}"
 
-                # **Trim text to start from "ABOUT ME"**
-                if "ABOUT ME" in full_text:
-                    full_text = full_text.split("ABOUT ME", 1)[1].strip()
-                else:
-                    logger.warning("⚠️ 'ABOUT ME' section not found in the document.")
-
-            if not full_text:
-                logger.warning("⚠️ PDF extracted text is empty after trimming.")
+            if not full_text.strip():
+                logger.warning("⚠️ PDF extracted text is empty.")
                 return None
 
-            self.text = full_text
-            logger.info("✅ Successfully extracted text from 'ABOUT ME' onwards.")
+            self.text = full_text.strip()
+            logger.info("✅ Successfully extracted the full text from the PDF.")
             return self.text
 
         except Exception as e:
             logger.error(f"❌ Failed to read PDF: {e}")
             return None
+
 
     def extract_text_via_ocr(self, page):
         """Extracts text from a PDF page using OCR (Tesseract) for scanned PDFs."""
