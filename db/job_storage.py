@@ -1,8 +1,10 @@
 import os  # Ensure this import is present
 import logging
 from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, func
+import json 
 from sqlalchemy import text
-
+from sqlalchemy import Column
+from sqlalchemy.dialects.mysql import JSON  # ✅ Correct import for MySQL
 from sqlalchemy.orm import sessionmaker, declarative_base
 import time
 from sqlalchemy.exc import OperationalError
@@ -31,6 +33,20 @@ class JobDescription(Base):
     job_description = Column(Text, nullable=False)
     chat_gpt_response = Column(Text)  # ChatGPT response field
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())  
+
+class LinkedInPost(Base):
+    """LinkedIn Post Model for SQLAlchemy ORM."""
+    __tablename__ = "linkedin_posts"  # Ensure this matches your database table name
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    post_id = Column(String(255), unique=True, nullable=False)  # Unique LinkedIn post ID
+    publisher_url = Column(Text, nullable=True)  # URL of the post's author
+    publish_date = Column(TIMESTAMP, nullable=True)  # Post's publish date
+    post_text = Column(Text, nullable=True)  # Content of the post
+    links = Column(JSON, nullable=True)  # Store links as JSON
+    emails = Column(JSON, nullable=True)  # ✅ Added field to store extracted emails as JSON
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())  # Auto timestamp
+
 
 
 # ✅ JobStorage Class
@@ -134,5 +150,46 @@ class JobStorage:
         finally:
             session.close()
 
+    def save_job_posts_to_db(self, post_data_list):
+        """Saves LinkedIn posts to the database, including links and emails."""
+        session = self.Session()
+        try:
+            for post_data in post_data_list:
+                if not isinstance(post_data, dict):  # ✅ Ensure correct data format
+                    logger.error(f"❌ Invalid post format: {post_data}")
+                    continue
 
-       
+                post_id = post_data.get("post_id")
+                if not post_id:
+                    logger.error(f"❌ Missing post_id in post: {post_data}")
+                    continue  # Skip invalid posts
+
+                # ✅ Check if the post already exists
+                post = session.query(LinkedInPost).filter_by(post_id=post_id).first()
+
+                if post:  # ✅ Update existing post
+                    post.publisher_url = post_data.get("post_publisher_url")
+                    post.publish_date = post_data.get("post_date")
+                    post.post_text = post_data.get("post_text", "")
+                    post.links = json.dumps(post_data.get("post_links", []))  # ✅ Store links as JSON
+                    post.emails = json.dumps(post_data.get("post_emails", []))  # ✅ Store emails as JSON
+                else:  # ✅ Insert new post
+                    post = LinkedInPost(
+                        post_id=post_id,
+                        publisher_url=post_data.get("post_publisher_url"),
+                        publish_date=post_data.get("post_date"),
+                        post_text=post_data.get("post_text", ""),
+                        links=json.dumps(post_data.get("post_links", [])),  # ✅ Store links as JSON
+                        emails=json.dumps(post_data.get("post_emails", []))  # ✅ Store emails as JSON
+                    )
+                    session.add(post)
+
+            session.commit()  # ✅ Commit transaction
+            logger.info(f"✅ Successfully saved {len(post_data_list)} LinkedIn posts.")
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"❌ Error saving LinkedIn posts: {e}")
+
+        finally:
+            session.close()
