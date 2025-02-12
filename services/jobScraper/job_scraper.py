@@ -12,20 +12,30 @@ from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException, NoSuchElementException
 from services.chatGpt import chat_gpt
+from services.chatService import chat_service
+
 from services.pdfReader.pdf_reader import PDFReader
+
 
 logger = logging.getLogger(__name__)
 
 class JobScraper:
     """Extracts job details from LinkedIn."""
-    def __init__(self, driver):
-        self.driver = driver
-        self.chat_gpt = chat_gpt.ChatGPT()
-        self.resume_path = os.getenv("RESUME_PATH", "/Resume.pdf")
-        
+    def __init__(self, driver): 
+            self.driver = driver
+            self.resume_path = os.getenv("RESUME_PATH", "/Resume.pdf")
 
-        self.pdf_reader = PDFReader(self.resume_path)
-        self.resume_text = self.pdf_reader.get_text()
+            # Check if CHAT_SERVICE is set and not empty
+            chat_service_env = os.getenv("AI_CHAT_SERVICE_URL", "").strip()
+
+            if chat_service_env:
+                self.chat_gpt =  chat_service.ChatService()
+
+            else:
+                self.chat_gpt = chat_gpt.ChatGPT()
+
+            self.pdf_reader = PDFReader(self.resume_path)
+            self.resume_text = self.pdf_reader.get_text()
 
     def extract_job_descriptions(self, num_pages=1):
         """Extracts job descriptions dynamically from LinkedIn in parallel using ThreadPoolExecutor."""
@@ -278,7 +288,7 @@ class JobScraper:
             """
 
             # ✅ Send request to ChatGPT
-            response = self.chat_gpt.ask(prompt, model="gpt-4o-mini")
+            response = self.chat_gpt.ask(prompt)
 
             # ✅ Validate response
             response_text = response.get("response", "").strip() if isinstance(response, dict) else str(response).strip()

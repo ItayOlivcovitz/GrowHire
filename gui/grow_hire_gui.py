@@ -469,13 +469,13 @@ class ScrollLockTextEdit(QTextEdit):
         self.setMaximumHeight(200)  # Prevents overly large descriptions
 
     def wheelEvent(self, event):
-        """Handles scroll to prevent affecting the table."""
+        """Handles scrolling with reversed direction and increased sensitivity."""
         if self.verticalScrollBar().isVisible() and self.verticalScrollBar().maximum() > 0:
-            self.verticalScrollBar().setValue(self.verticalScrollBar().value() + event.angleDelta().y() / 120)
+            # ✅ Reverse scroll direction & increase sensitivity
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() - (event.angleDelta().y() * 3 / 120))
             event.accept()
         else:
             event.ignore()
-
 
   
 
