@@ -100,6 +100,109 @@ class JobScraper:
         return job_list
 
 
+    def evaluate_job_matches(self, job_descriptions):
+        """Evaluates job matches using ChatGPT concurrently for multiple job descriptions.
+
+        Args:
+            job_descriptions (list): List of job descriptions to evaluate.
+
+        Returns:
+            list: List of dictionaries containing job descriptions and extracted match scores.
+        """
+        if not self.resume_text:
+            logger.error("❌ Resume text is missing. Please provide a valid resume before evaluating jobs.")
+            return []
+
+        job_match_results = []
+
+        # ✅ Define a function to evaluate a single job description
+        def evaluate_single_job(index, job_description):
+            """Evaluates a single job description and returns results."""
+            if not job_description:
+                logger.warning(f"⚠️ Job {index}: No description available. Skipping.")
+                return {"index": index, "description": None, "score": None}
+
+            # ✅ Prepare prompt
+            prompt = f"""
+            You are an AI recruiter evaluating a resume against a job description.
+            Compare the resume with the job description and provide insights on compatibility.
+
+            ### Evaluation Criteria:
+            - Provide a match score (0-100%) based on relevant skills, experience, and qualifications.
+            - Identify missing skills or requirements.
+            - Highlight key strengths from the resume that align with the job description.
+            - Offer recommendations for improvement.
+
+            ### Special Considerations:
+            - If the job description mentions "Junior," **increase the match score** and consider it highly relevant for me.
+            - If the job description does not specify required years of experience, **increase the match score** and consider it relevant for me.
+            - Prioritize opportunities that align with my skills and background.
+
+            ### Resume:
+            {self.resume_text}
+
+            ### Job Description:
+            {job_description}
+
+            ### Output Format:
+            - **Match Score:** XX% (Boosted if criteria met)
+            - **Missing Skills:** (List)
+            - **Strengths:** (List)
+            - **Recommendations:** (How to improve)
+            - **Interest Level:** High/Moderate/Low (Based on the conditions)
+            """
+
+            # ✅ Retry mechanism for AI request
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    logger.info(f"🔄 Job {index}: Sending request to ChatGPT (Attempt {attempt + 1}/{max_retries}) [Thread: {threading.current_thread().name}]")
+                    response = self.chat_gpt.ask(prompt)
+
+                    # ✅ Validate response
+                    response_text = response.get("response", "").strip() if isinstance(response, dict) else str(response).strip()
+
+                    if not response_text:
+                        logger.error(f"❌ Job {index}: Empty response from ChatGPT. Retrying...")
+                        time.sleep(2 ** attempt)  # Exponential backoff before retrying
+                        continue  
+
+                    # ✅ Extract match score
+                    match_score = JobScraper.extract_match_score(response_text)
+
+                    logger.info(f"✅ Job {index}: Processed successfully. Match Score: {match_score}% [Thread: {threading.current_thread().name}]")
+                    return {
+                        "index": index,
+                        **job_description,
+                        "chat_gpt_response": response_text,
+                        "score": match_score
+                    }
+
+                except Exception as e:
+                    logger.error(f"❌ Job {index}: Error processing ChatGPT request - {e}")
+                    time.sleep(2 ** attempt)  # Exponential backoff before retrying
+
+            logger.error(f"❌ Job {index}: Failed after {max_retries} attempts.")
+            return {"index": index, "description": job_description, "score": None}
+
+        # ✅ Optimize ThreadPoolExecutor for performance
+        num_jobs = len(job_descriptions)
+        max_threads = min(5, num_jobs)  # Avoid excessive API calls & overloading
+        logger.info(f"🔄 Processing {num_jobs} jobs with {max_threads} threads...")
+
+        # ✅ Use ThreadPoolExecutor to process jobs in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+            futures = {executor.submit(evaluate_single_job, index, job_desc): index for index, job_desc in enumerate(job_descriptions, start=1)}
+            
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    job_match_results.append(future.result())
+                except Exception as e:
+                    logger.error(f"❌ Unexpected error processing job: {e}")
+
+        logger.info("✅ All jobs evaluated in parallel.")
+        return job_match_results
+    
     def extract_single_job(self, job, index):
         """Extracts a single job description dynamically using Selenium."""
         try:
@@ -187,10 +290,7 @@ class JobScraper:
 
         finally:
             logger.info(f"✅ Job {index}: Extraction complete.")
-
-
-
-
+    
     def extract_match_score(response_text):
         """
         Extracts the Match Score from the given AI-generated response.
@@ -233,88 +333,3 @@ class JobScraper:
         # ❌ If nothing was found, log error
         logger.error("❌ Match Score not found in response.")
         return None
-    
-
-    def evaluate_job_matches(self, job_descriptions):
-        """Evaluates job matches using ChatGPT concurrently for multiple job descriptions.
-        
-        Args:
-            job_descriptions (list): List of job descriptions to evaluate.
-        
-        Returns:
-            list: List of dictionaries containing job descriptions and extracted match scores.
-        """
-        if not self.resume_text:
-            logger.error("❌ Resume text is missing. Please provide a valid resume before evaluating jobs.")
-            return []
-
-        job_match_results = []
-
-        # ✅ Define a function to evaluate a single job description
-        def evaluate_single_job(index, job_description):
-            """Evaluates a single job description and returns results."""
-            if not job_description:
-                logger.warning(f"⚠️ Skipping job {index}: No description available.")
-                return {"index": index, "description": None, "score": None}
-
-            # ✅ Prepare prompt
-            prompt = f"""
-            You are an AI recruiter evaluating a resume against a job description.
-            Compare the resume with the job description and provide insights on compatibility.
-
-            ### Evaluation Criteria:
-            - Provide a match score (0-100%) based on relevant skills, experience, and qualifications.
-            - Identify missing skills or requirements.
-            - Highlight key strengths from the resume that align with the job description.
-            - Offer recommendations for improvement.
-
-            ### Special Considerations:
-            - If the job description mentions "Junior," **increase the match score** and consider it highly relevant for me.
-            - If the job description does not specify required years of experience, **increase the match score** and consider it relevant for me.
-            - Prioritize opportunities that align with my skills and background.
-
-            ### Resume:
-            {self.resume_text}
-
-            ### Job Description:
-            {job_description}
-
-            ### Output Format:
-            - **Match Score:** XX% (Boosted if criteria met)
-            - **Missing Skills:** (List)
-            - **Strengths:** (List)
-            - **Recommendations:** (How to improve)
-            - **Interest Level:** High/Moderate/Low (Based on the conditions)
-            """
-
-            # ✅ Send request to ChatGPT
-            response = self.chat_gpt.ask(prompt)
-
-            # ✅ Validate response
-            response_text = response.get("response", "").strip() if isinstance(response, dict) else str(response).strip()
-
-            if not response_text:
-                logger.error(f"❌ Invalid response format from ChatGPT for job {index}: {response}")
-                return {"index": index, "description": job_description, "score": None}
-
-            # ✅ Extract match score
-            match_score = JobScraper.extract_match_score(response_text)
-
-            return {
-                "index": index,
-                **job_description,
-                "chat_gpt_response": response_text,
-                "score": match_score
-            }
-
-        # ✅ Use ThreadPoolExecutor to process jobs in parallel
-        max_threads = min(10, len(job_descriptions))  # Prevent too many concurrent requests
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
-            futures = {executor.submit(evaluate_single_job, index, job_desc): index for index, job_desc in enumerate(job_descriptions, start=1)}
-            for future in concurrent.futures.as_completed(futures):
-                job_match_results.append(future.result())
-
-        logger.info("✅ All jobs evaluated in parallel.")
-        return job_match_results
-
-
