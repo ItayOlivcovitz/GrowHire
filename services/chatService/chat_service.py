@@ -14,11 +14,9 @@ class ChatService:
         logger.info(f"✅ Chat Service initialized. API URL: {self.api_url}")
 
     def ask(self, prompt):
+        """Send a prompt to AI-Chat-Service and return the response."""
         try:
             response = requests.post(self.api_url, json={"prompt": prompt}, timeout=100)
-
-            # ✅ Log full raw response for debugging
-            #logger.info(f"🔄 Raw Response from AI-Chat-Service: {response.status_code} - {response.text}")
 
             if response.status_code == 200:
                 data = response.json()
@@ -38,18 +36,3 @@ class ChatService:
         except requests.RequestException as e:
             logger.error(f"❌ Failed to connect to AI-Chat-Service: {e}")
             return {"error": f"Connection error: {str(e)}"}
-
-
-def main():
-    """Test the ChatService class."""
-    chat_service = ChatService()
-    
-    prompt = input("Enter your message: ")  # ✅ Get user input
-    response = chat_service.ask(prompt)  # ✅ Send prompt to AI-Chat-Service
-    
-    print("\n💬 Response from AI-Chat-Service:")
-    print(response)
-
-
-if __name__ == "__main__":
-    main()  # ✅ Run the main function when the script is executed
