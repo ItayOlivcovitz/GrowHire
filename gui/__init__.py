@@ -1,3 +1,3 @@
-from .grow_hire_gui import GrowHireGUI  # ✅ Use relative import
+from .main_window import GrowHireGUI  # ✅ Use relative import
 
 __all__ = ["GrowHireGUI"]

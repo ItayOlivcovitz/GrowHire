@@ -37,7 +37,7 @@ class JobScraper:
             self.pdf_reader = PDFReader(self.resume_path)
             self.resume_text = self.pdf_reader.get_text()
 
-    def read_prompt_template(file_path, resume_text, job_description):
+    def read_prompt_template(self, file_path, resume_text, job_description):
         """Reads the prompt template from a file and formats it with resume and job description."""
         try:
             with open(file_path, "r", encoding="utf-8") as file:
@@ -48,7 +48,8 @@ class JobScraper:
             return None
         except Exception as e:
             logger.error(f"❌ Error reading prompt file: {e}")
-            return None
+        return None
+
     
     def extract_job_descriptions(self, num_pages=1):
         """Extracts job descriptions dynamically from LinkedIn in parallel using ThreadPoolExecutor."""
@@ -124,7 +125,7 @@ class JobScraper:
             return {"index": index, "description": None, "score": None}
 
         # ✅ Load prompt template from file and format with resume & job description
-        prompt_template_path = "prompt_template.txt"  # Change this if needed
+        prompt_template_path = "utils\prompt_template.txt"  # Change this if needed
         prompt = self.read_prompt_template(prompt_template_path, self.resume_text, job_description)
 
         if not prompt:
@@ -310,23 +311,4 @@ class JobScraper:
             logger.info("✅ All jobs evaluated in parallel.")
             return job_match_results
 
-    @staticmethod
-    def extract_match_score(response_text):
-        """Extracts the match score from the AI-generated response."""
-        logger.info("🔍 Parsing AI Response for Match Score...")
-
-        patterns = [
-            r"-\s*\*\*Match Score:\s*(\d+)%\*\*",  # **Match Score:** XX%
-            r"Match Score:\s*(\d+)%",  # Match Score: XX%
-            r"-\s*Match Score:\s*(\d+)%",  # - Match Score: XX%
-            r"\*\*Match Score:\s*(\d+)%\*\*",  # **Match Score: XX%**
-            r"\bMatch Score\s*[:\-]?\s*(\d+)%\b",  # Match Score - XX%
-        ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, response_text)
-            if match:
-                return int(match.group(1))
-
-        logger.error("❌ Match Score not found in response.")
-        return None
+   
