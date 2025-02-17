@@ -60,7 +60,7 @@ class GrowHireGUI(QWidget):
         layout.addWidget(self.job_search_panel)
 
         # ✅ Job Actions Section (Pass JobResultsPopup)
-        self.job_actions_panel = JobActionsPanel(self.growhire_bot, self.job_results_popup)  
+        self.job_actions_panel = JobActionsPanel(self.growhire_bot, self.job_results_popup, self.job_search_panel)
         layout.addWidget(self.job_actions_panel)
 
         # ✅ View Results Section
