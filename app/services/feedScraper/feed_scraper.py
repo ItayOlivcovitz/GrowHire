@@ -1,30 +1,23 @@
-import time
+
 import logging
 import re
 import os
-import concurrent.futures
-import threading
 from datetime import datetime, timedelta
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoSuchElementException, WebDriverException
 
-
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, StaleElementReferenceException, NoSuchElementException
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
+
 from colorama import Fore, Style  # ✅ Color output for keyword matches
-from db.job_storage import JobStorage  
+from db.job_storage import JobStorage
 
 logger = logging.getLogger(__name__)
 
 class FeedScraper:
     """Scrolls through the LinkedIn feed and extracts posts containing specific keywords and links."""
 
-    def __init__(self, driver, keywords=None, keywords_file="utils/keywords.txt"):
+    def __init__(self, driver, keywords=None, keywords_file="app/utils/keywords.txt"):
             self.driver = driver
             self.scrolled_posts = set()  # Store post identifiers instead of elements
             self.job_storage = JobStorage()  # ✅ Store job posts using JobStorage

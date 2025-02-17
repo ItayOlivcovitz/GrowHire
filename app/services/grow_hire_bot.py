@@ -1,9 +1,9 @@
 import logging
-from services.linkedinNavigator.linkedin_navigator import LinkedInNavigator
-from services.jobScraper.job_scraper import JobScraper  
+from app.services.linkedinNavigator.linkedin_navigator import LinkedInNavigator
+from app.services.jobScraper.job_scraper import JobScraper  
 from db.job_storage import JobStorage  
-from services.pdfReader.pdf_reader import PDFReader
-from services.feedScraper.feed_scraper import FeedScraper  
+from app.services.pdfReader.pdf_reader import PDFReader
+from app.services.feedScraper.feed_scraper import FeedScraper  
 
 logger = logging.getLogger(__name__)
 

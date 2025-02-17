@@ -1,10 +1,10 @@
 import sys
 import logging
 from PySide6.QtWidgets import QApplication
-from gui.main_window import GrowHireGUI  # ✅ Updated to match modularized GUI structure
+from app.gui.main_window import GrowHireGUI  # ✅ Updated to match modularized GUI structure
 from db.job_storage import JobStorage  # ✅ Ensures JobStorage is initialized before GUI
-from utils.env_config import EnvConfigLoader  # ✅ Ensures environment variables are loaded
-from services.grow_hire_bot import GrowHireBot
+from app.utils.env_config import EnvConfigLoader  # ✅ Ensures environment variables are loaded
+from app.services.grow_hire_bot import GrowHireBot
 
 
 def setup_logger():

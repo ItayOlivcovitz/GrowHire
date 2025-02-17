@@ -21,7 +21,7 @@ Compare the resume with the job description and provide insights on compatibilit
 # ⚠️ Don't delete this line – it dynamically inserts the job description
 
 ### Output Format:
-- **Match Score:** XX% (Boosted if criteria met)
+- **Match Score:** XX% (Boosted if criteria met) # Keep it
 - **Missing Skills:** (List)
 - **Strengths:** (List)
 - **Recommendations:** (How to improve)

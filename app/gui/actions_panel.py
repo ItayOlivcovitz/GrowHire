@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QGroupBox, QVBoxLayout, QPushButton
 from PySide6.QtCore import QThread, QObject, Signal
-from gui.workers.login_worker import LoginWorker
+from app.gui.workers.login_worker import LoginWorker
 import logging
 
 logger = logging.getLogger(__name__)

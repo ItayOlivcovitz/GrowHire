@@ -1,5 +1,4 @@
-import sys
-import webbrowser
+
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, 
     QPushButton, QTextEdit

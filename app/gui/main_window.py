@@ -1,12 +1,11 @@
 
-
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QHBoxLayout, QPushButton
-from gui.actions_panel import ActionsPanel
+from app.gui.actions_panel import ActionsPanel
 from .job_search_panel import JobSearchPanel
-from gui.job_actions_panel import JobActionsPanel
-from gui.job_results_popup import JobResultsPopup  # ✅ Import JobResultsPopup
-from gui.feed_scroller import FeedScrollWorker
-from services.grow_hire_bot import GrowHireBot
+from app.gui.job_actions_panel import JobActionsPanel
+from app.gui.job_results_popup import JobResultsPopup  # ✅ Import JobResultsPopup
+from app.gui.feed_scroller import FeedScrollWorker
+from app.services.grow_hire_bot import GrowHireBot
 from PySide6.QtCore import QThread
 
 import logging
