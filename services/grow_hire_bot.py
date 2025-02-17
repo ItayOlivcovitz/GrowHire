@@ -20,6 +20,17 @@ class GrowHireBot:
         self._job_pdf_reader = PDFReader() 
         self.feed_scraper = FeedScraper(self._driver)  # ✅ Loads keywords from 'keywords.txt' if no list is provided
         
+    def search_jobs(self, job_title, location, filters=None):
+        """Triggers job search through LinkedInNavigator."""
+        
+        if filters is None:
+            filters = {}  # ✅ Ensure filters is always a dictionary
+
+        logger.info(f"🔍 Searching for jobs: {job_title} in {location} with filters: {filters}")
+
+        # ✅ Calls LinkedInNavigator's job search function
+        return self.linkedin_navigator.search_jobs(job_title, location, filters)
+
     
     def extract_job_descriptions(self, num_pages=1):
         """Triggers job descriptions extraction through JobScraper."""

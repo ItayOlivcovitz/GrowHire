@@ -1,27 +1,11 @@
 from PySide6.QtWidgets import QGroupBox, QVBoxLayout, QPushButton
 from PySide6.QtCore import QThread, QObject, Signal
+from gui.workers.login_worker import LoginWorker
 import logging
 
 logger = logging.getLogger(__name__)
 
-class LinkedInWorker(QObject):
-    """Worker class to handle LinkedIn login in a separate thread."""
-    finished = Signal()
 
-    def __init__(self, linkedin_navigator):
-        super().__init__()
-        self.linkedin_navigator = linkedin_navigator
-
-    def run(self):
-        """Runs the LinkedIn login process."""
-        try:
-            logger.info("🔄 Opening LinkedIn login...")
-            self.linkedin_navigator.open_linkedin()
-            logger.info("✅ LinkedIn opened successfully.")
-        except Exception as e:
-            logger.error(f"❌ Error while opening LinkedIn: {e}")
-        finally:
-            self.finished.emit()  # Notify that the task is completed
 
 
 class ActionsPanel(QGroupBox):
@@ -55,7 +39,7 @@ class ActionsPanel(QGroupBox):
 
         # ✅ Create the QThread and Worker
         self.thread = QThread()
-        self.worker = LinkedInWorker(self.growhire_bot.linkedin_navigator)
+        self.worker = LoginWorker(self.growhire_bot.linkedin_navigator)
 
         # ✅ Move worker to thread
         self.worker.moveToThread(self.thread)
