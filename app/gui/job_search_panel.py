@@ -53,3 +53,21 @@ class JobSearchPanel(QGroupBox):
         layout.addWidget(self.easy_apply_checkbox)
 
         self.setLayout(layout)
+
+    def get_filters(self):
+        """Collects and returns the filter settings as a dictionary."""
+        filters = {}
+        filters["date_posted"] = self.date_posted_dropdown.currentText()
+        filters["experience_level"] = self.experience_level_dropdown.currentText()
+        
+        work_types = []
+        if self.remote_hybrid.isChecked():
+            work_types.append("Hybrid")
+        if self.remote_onsite.isChecked():
+            work_types.append("On-site")
+        if self.remote_remote.isChecked():
+            work_types.append("Remote")
+        filters["work_type"] = work_types
+        
+        filters["easy_apply"] = self.easy_apply_checkbox.isChecked()
+        return filters

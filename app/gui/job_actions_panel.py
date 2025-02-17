@@ -12,10 +12,12 @@ logging.basicConfig(level=logging.INFO)  # ✅ Set log level to INFO
 class JobActionsPanel(QGroupBox):
     """Panel for job search and evaluation actions."""
     
-    def __init__(self, growhire_bot, job_results_table):
+    def __init__(self, growhire_bot, job_results_table, job_search_panel):
         super().__init__("📌 Job Actions")
         self.growhire_bot = growhire_bot
         self.job_results_table = job_results_table  # ✅ Store reference to JobResultsTable
+        self.job_search_panel = job_search_panel
+
         self.search_thread = None
         self.initUI()
 
@@ -48,28 +50,33 @@ class JobActionsPanel(QGroupBox):
 
         logger.info("🚀 Starting job search...")
 
-        job_title = "Software Engineer"  # Replace with actual UI input
-        location = "Israel"  # Replace with actual UI input
-        filters = {}  # Extract from UI if needed
+        # Extract job title, location, and filters from the UI (assumes these fields exist in your JobSearchPanel)
+        job_title = self.job_search_panel.job_title_field.text() or "Software Engineer"
+        location = self.job_search_panel.location_field.text() or "Israel"
+        filters = self.job_search_panel.get_filters()
 
-        # ✅ Create the QThread and Worker
+        # Log the filter values for debugging
+        logger.info(f"🔍 Job search filters: {filters}")
+
+        # Create the QThread and Worker
         self.search_thread = QThread()
         logger.info(f"🔍 Type of growhire_bot: {type(self.growhire_bot)}")
 
         self.search_worker = JobSearchWorker(self.growhire_bot, job_title, location, filters)
         self.search_worker.moveToThread(self.search_thread)
 
-        # ✅ Connect Signals
+        # Connect signals
         self.search_thread.started.connect(self.search_worker.run)
         self.search_worker.finished.connect(self.search_thread.quit)
         self.search_worker.finished.connect(self.search_worker.deleteLater)
         self.search_thread.finished.connect(self.search_thread.deleteLater)
 
-        # ✅ Show popup when results are ready
+        # Show popup when results are ready
         self.search_worker.results_ready.connect(self.show_results_popup)
 
-        # ✅ Start the thread
+        # Start the thread
         self.search_thread.start()
+
 
 
     def show_results_popup(self, job_results):
