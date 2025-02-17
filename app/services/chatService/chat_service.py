@@ -10,7 +10,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 class ChatService:
     def __init__(self):
         """Initialize the AI-Chat-Service API client."""
-        self.api_url = os.getenv("AI_CHAT_SERVICE_URL", "")  # Default to localhost
+        
+        base_url = os.getenv("AI_CHAT_SERVICE_URL", "")
+        self.api_url = base_url.rstrip("/") + "/chat"
+
         logger.info(f"✅ Chat Service initialized. API URL: {self.api_url}")
 
     def ask(self, prompt):

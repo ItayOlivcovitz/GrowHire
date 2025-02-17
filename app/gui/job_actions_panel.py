@@ -1,8 +1,8 @@
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QGroupBox, QVBoxLayout, QPushButton, QLabel, QComboBox, QHBoxLayout
 import logging
-from gui.workers.job_search_worker import JobSearchWorker  # ✅ Import JobSearchWorker
-from gui.job_results_popup import JobResultsPopup
+from app.gui.workers.job_search_worker import JobSearchWorker  # ✅ Import JobSearchWorker
+from app.gui.job_results_popup import JobResultsPopup
 
 
 # ✅ Initialize Logger

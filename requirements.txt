@@ -12,5 +12,6 @@ SQLAlchemy==2.0.37  # Database ORM
 webdriver_manager==4.0.2  # ChromeDriver auto-manager
 pymysql==1.1.0  # ✅ MySQL database driver (NEW)
 cryptography==41.0.0  # Added for MySQL authentication support
+colorama==0.4.6  # Terminal text coloring
 
 

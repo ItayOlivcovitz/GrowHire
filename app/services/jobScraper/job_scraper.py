@@ -1,20 +1,17 @@
-import time
-import logging
-import re
-import os
 import concurrent.futures
-import threading
+import logging
+import os
+import re
+import time
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
-from selenium.common.exceptions import TimeoutException, StaleElementReferenceException, NoSuchElementException
-from services.chatGpt import chat_gpt
-from services.chatService import chat_service
 
-from services.pdfReader.pdf_reader import PDFReader
+from app.services.chatGpt import chat_gpt
+from app.services.chatService import chat_service
+from app.services.pdfReader.pdf_reader import PDFReader
+
 
 
 logger = logging.getLogger(__name__)
@@ -245,7 +242,7 @@ class JobScraper:
                 return {"index": index, "description": None, "score": None}
 
             # ✅ Load prompt template from file and format with resume & job description
-            prompt_template_path = "utils\prompt_template.txt"  # Change this if needed
+            prompt_template_path = "app/utils/prompt_template.txt"
             prompt = self.read_prompt_template(prompt_template_path, self.resume_text, job_description)
 
             if not prompt:

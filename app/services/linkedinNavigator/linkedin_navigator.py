@@ -1,8 +1,7 @@
 import os
 import time
 import logging
-import tempfile
-import shutil
+
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By

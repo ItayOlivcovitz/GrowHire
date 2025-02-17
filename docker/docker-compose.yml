@@ -15,8 +15,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql  # ✅ Persistent database storage
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # ✅ Ensure correct path and read-only
-      - ./db/my.cnf:/etc/mysql/my.cnf:ro  # ✅ Mount custom config instead of copying
+      - ../db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # ✅ Ensure correct path and read-only
+      - ../db/my.cnf:/etc/mysql/my.cnf:ro  # ✅ Mount custom config instead of copying
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     networks:
@@ -46,7 +46,9 @@ services:
       - growhire_network
 
   app:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: growhire_app
     restart: always
     depends_on:
@@ -54,28 +56,22 @@ services:
         condition: service_healthy
     working_dir: /app
     environment:
-      DATABASE_URL: mysql+pymysql://root:root@db:3306/growhire  # ✅ Ensure DB uses correct MySQL host
-      DISPLAY: ":99"  # ✅ Use Xvfb virtual display instead of :0
-      QT_X11_NO_MITSHM: "1"  # Helps mitigate issues with MIT-SHM when using X11
+      DATABASE_URL: mysql+pymysql://root:root@db:3306/growhire
+      DISPLAY: ":99"
+      QT_X11_NO_MITSHM: "1"
     ports:
-      - "5000:5000"  # ✅ Web application
-      - "4444:4444"  # ✅ Selenium/WebDriver (if needed)
-      - "5900:5900"  # ✅ VNC access to GUI
-      - "9222:9222"  # ✅ Chrome Debugging Port (if needed)
-      - "6080:6080"  # ✅ noVNC Web Access
+      - "5000:5000"
+      - "4444:4444"
+      - "5900:5900"
+      - "9222:9222"
+      - "6080:6080"
     volumes:
-      - ./resume:/app/resume
+      - ../resume:/app/resume
+      - ../app/utils:/app/utils
     networks:
       - growhire_network
-    command: ["/bin/bash", "-c", "
-      Xvfb :99 -screen 0 1920x1080x24 & sleep 2 && \
-      setxkbmap us && \
-      mkdir -p ~/.fluxbox && \
-      echo 'session.screen0.toolbar.visible: false' > ~/.fluxbox/init && \
-      fluxbox & \
-      x11vnc -forever -display :99 -rfbport 5900 -bg && \
-      nohup websockify --web /usr/share/novnc/ 6080 localhost:5900 > /var/log/websockify.log 2>&1 & \
-      /app/venv/bin/python3 main.py"]
+    command: >
+      /bin/bash -c "Xvfb :99 -screen 0 1920x1080x24 & sleep 2 && setxkbmap us && mkdir -p ~/.fluxbox && echo 'session.screen0.toolbar.visible: false' > ~/.fluxbox/init && fluxbox & x11vnc -forever -display :99 -rfbport 5900 -bg && nohup websockify --web /usr/share/novnc/ 6080 localhost:5900 > /var/log/websockify.log 2>&1 & /app/venv/bin/python3 main.py"
 
 volumes:
   mysql_data:
