@@ -40,6 +40,9 @@ class JobSearchWorker(QObject):
                 self.results_ready.emit([])  # ✅ Emit empty results if no matches
                 return
 
+            #Save job matches to the database
+            self.growhire_bot.save_job_matches_to_db(evaluated_job_matches)
+
             # ✅ Sort results by score (highest first)
             def extract_score(job):
                 """Safely extract and convert the job score to an integer."""
