@@ -69,11 +69,9 @@ class FeedScraper:
             try:
                 # ✅ Scroll and wait for new posts to load
                 self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                
                 WebDriverWait(self.driver, 10).until(
                     lambda driver: driver.execute_script("return document.body.scrollHeight") > prev_height
                 )
-
             except TimeoutException:
                 logger.info("🚧 No more new posts detected (page height did not increase). Stopping scroll.")
                 break
@@ -83,21 +81,17 @@ class FeedScraper:
             logger.info(f"🔍 Total posts found on page after scroll: {len(posts)}")
 
             new_posts = []
-
             for post in posts:
                 try:
                     post_id = post.get_attribute("data-urn")
-
                     # ✅ Fallback if data-urn is missing
                     if not post_id:
                         post_id = hash(post.text)  # Unique fallback ID using post text
-
                     if post_id and post_id not in self.seen_posts:
                         new_posts.append(post)
                         self.seen_posts.add(post_id)  # ✅ Ensure post is marked as seen
                     else:
                         logger.debug(f"Skipping already seen post {post_id}")
-
                 except StaleElementReferenceException:
                     logger.warning("⚠️ A post disappeared before it could be processed.")
 
@@ -108,7 +102,6 @@ class FeedScraper:
                 try:
                     post_id = post.get_attribute("data-urn") or hash(post.text)
                     post_text_data = self.extract_post_text(post)
-
                     post_text = post_text_data.get("text", "No Text Found")
                     post_links = post_text_data.get("links", [])
                     post_emails = post_text_data.get("emails", [])
@@ -128,6 +121,9 @@ class FeedScraper:
                     publisher_url = self.extract_publisher_url(post)
                     post_time, post_date = self.extract_post_time(post)
 
+                    # Save matching keywords as a comma-separated string in "keyword_found"
+                    keyword_str = ", ".join(matching_keywords)
+
                     post_data.update({
                         "index": index + 1,
                         "post_publisher_url": publisher_url,
@@ -136,7 +132,7 @@ class FeedScraper:
                         "post_id": post_id,
                         "post_links": post_links,
                         "post_emails": post_emails,
-                        "matched_keywords": matching_keywords
+                        "keyword_found": keyword_str
                     })
                     extracted_posts.append(post_data)
 
@@ -149,6 +145,8 @@ class FeedScraper:
 
         logger.info(f"✅ Total posts extracted: {len(extracted_posts)}")
         return extracted_posts
+
+    
     def extract_post_data(self, post):
         """Extracts post text, links, and emails from a LinkedIn post."""
         try:
