@@ -50,6 +50,14 @@ class GrowHireBot:
         """Saves job descriptions with AI analysis results to the database."""
         self._job_storage.save_job_posts_to_db(job_match_results)
 
+    def get_all_job_descriptions(self):
+        """Retrieves all job descriptions from the database."""
+        return self._job_storage.get_all_job_descriptions()
+    
+    def get_all_linkedin_posts(self):
+        """Retrieves all LinkedIn posts from the database."""
+        return self._job_storage.get_all_linkedin_posts()
+
     def set_resume_path(self, path):
             """Sets the resume path and performs any additional initialization if necessary."""
             self.resume_path = path    

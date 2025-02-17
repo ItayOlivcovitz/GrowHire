@@ -5,6 +5,7 @@ from .job_search_panel import JobSearchPanel
 from app.gui.job_actions_panel import JobActionsPanel
 from app.gui.job_results_popup import JobResultsPopup  # ✅ Import JobResultsPopup
 from app.gui.feed_scroller import FeedScrollWorker
+from app.gui.view_results_panel import ViewResultsPanel
 from app.services.grow_hire_bot import GrowHireBot
 from PySide6.QtCore import QThread
 
@@ -59,10 +60,15 @@ class GrowHireGUI(QWidget):
         layout.addWidget(self.job_search_panel)
 
         # ✅ Job Actions Section (Pass JobResultsPopup)
-        self.job_actions_panel = JobActionsPanel(self.growhire_bot, self.job_results_popup)  # ✅ FIXED
+        self.job_actions_panel = JobActionsPanel(self.growhire_bot, self.job_results_popup)  
         layout.addWidget(self.job_actions_panel)
 
+        # ✅ View Results Section
+        self.view_results_panel = ViewResultsPanel(self.growhire_bot)
+        layout.addWidget(self.view_results_panel)
+
         self.setLayout(layout)
+
 
 
     def start_feed_scroller(self):

@@ -10,8 +10,6 @@ import time
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql import text
 
-
-
 # ✅ Configure Logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -35,17 +33,17 @@ class JobDescription(Base):
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())  
 
 class LinkedInPost(Base):
-    """LinkedIn Post Model for SQLAlchemy ORM."""
-    __tablename__ = "linkedin_posts"  # Ensure this matches your database table name
+    __tablename__ = "linkedin_posts"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     post_id = Column(String(255), unique=True, nullable=False)  # Unique LinkedIn post ID
-    publisher_url = Column(Text, nullable=True)  # URL of the post's author
+    publisher_url = Column(Text, nullable=True)  # URL of the post's publisher
     publish_date = Column(TIMESTAMP, nullable=True)  # Post's publish date
     post_text = Column(Text, nullable=True)  # Content of the post
     links = Column(JSON, nullable=True)  # Store links as JSON
-    emails = Column(JSON, nullable=True)  # ✅ Added field to store extracted emails as JSON
-    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())  # Auto timestamp
+    emails = Column(JSON, nullable=True)  # Store extracted emails as JSON
+    keyword_found = Column(String(255), nullable=True)  # NEW field for keywords found
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())  # Auto-generated timestamp
 
 
 
@@ -151,11 +149,11 @@ class JobStorage:
             session.close()
 
     def save_job_posts_to_db(self, post_data_list):
-        """Saves LinkedIn posts to the database, including links and emails."""
+        """Saves LinkedIn posts to the database, including links, emails, and keyword_found."""
         session = self.Session()
         try:
             for post_data in post_data_list:
-                if not isinstance(post_data, dict):  # ✅ Ensure correct data format
+                if not isinstance(post_data, dict):  # Ensure correct data format
                     logger.error(f"❌ Invalid post format: {post_data}")
                     continue
 
@@ -164,32 +162,61 @@ class JobStorage:
                     logger.error(f"❌ Missing post_id in post: {post_data}")
                     continue  # Skip invalid posts
 
-                # ✅ Check if the post already exists
+                # Check if the post already exists
                 post = session.query(LinkedInPost).filter_by(post_id=post_id).first()
 
-                if post:  # ✅ Update existing post
+                if post:  # Update existing post
                     post.publisher_url = post_data.get("post_publisher_url")
                     post.publish_date = post_data.get("post_date")
                     post.post_text = post_data.get("post_text", "")
-                    post.links = json.dumps(post_data.get("post_links", []))  # ✅ Store links as JSON
-                    post.emails = json.dumps(post_data.get("post_emails", []))  # ✅ Store emails as JSON
-                else:  # ✅ Insert new post
+                    post.links = json.dumps(post_data.get("post_links", []))  # Store links as JSON
+                    post.emails = json.dumps(post_data.get("post_emails", []))  # Store emails as JSON
+                    post.keyword_found = post_data.get("keyword_found")
+                else:  # Insert new post
                     post = LinkedInPost(
                         post_id=post_id,
                         publisher_url=post_data.get("post_publisher_url"),
                         publish_date=post_data.get("post_date"),
                         post_text=post_data.get("post_text", ""),
-                        links=json.dumps(post_data.get("post_links", [])),  # ✅ Store links as JSON
-                        emails=json.dumps(post_data.get("post_emails", []))  # ✅ Store emails as JSON
+                        links=json.dumps(post_data.get("post_links", [])),  # Store links as JSON
+                        emails=json.dumps(post_data.get("post_emails", [])),  # Store emails as JSON
+                        keyword_found=post_data.get("keyword_found")
                     )
                     session.add(post)
 
-            session.commit()  # ✅ Commit transaction
+            session.commit()  # Commit transaction
             logger.info(f"✅ Successfully saved {len(post_data_list)} LinkedIn posts.")
 
         except Exception as e:
             session.rollback()
             logger.error(f"❌ Error saving LinkedIn posts: {e}")
 
+        finally:
+            session.close()
+
+
+    def get_all_job_descriptions(self):
+            """Retrieve all job description records from the database."""
+            session = self.Session()
+            try:
+                jobs = session.query(JobDescription).all()
+                logger.info(f"✅ Retrieved {len(jobs)} job descriptions from the database.")
+                return jobs
+            except Exception as e:
+                logger.error(f"❌ Error retrieving job descriptions: {e}")
+                return []
+            finally:
+                session.close()
+
+    def get_all_linkedin_posts(self):
+        """Retrieve all LinkedIn post records from the database."""
+        session = self.Session()
+        try:
+            posts = session.query(LinkedInPost).all()
+            logger.info(f"✅ Retrieved {len(posts)} LinkedIn posts from the database.")
+            return posts
+        except Exception as e:
+            logger.error(f"❌ Error retrieving LinkedIn posts: {e}")
+            return []
         finally:
             session.close()

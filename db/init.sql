@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS linkedin_posts (
     post_text TEXT NOT NULL,  -- Full text content of the post
     links JSON,  -- Store links as JSON array
     emails JSON,  -- Store extracted emails as JSON array
+    keyword_found VARCHAR(255) DEFAULT NULL,  -- Holds a string indicating the found keyword(s)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Auto-generated timestamp
 );
+
 
