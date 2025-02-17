@@ -27,23 +27,6 @@ services:
       retries: 5
       start_period: 30s
       timeout: 5s
-      
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: phpmyadmin
-    restart: always
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: root
-    ports:
-      - "8080:80"  # ✅ Access phpMyAdmin via http://localhost:8080
-    networks:
-      - growhire_network
 
   app:
     build:
