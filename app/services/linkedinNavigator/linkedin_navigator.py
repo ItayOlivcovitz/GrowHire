@@ -77,6 +77,25 @@ class LinkedInNavigator:
             return None
 
 
+    def search_people(self, search_query, num_pages=1):
+        """
+        Opens LinkedIn search for people using the provided search query and number of pages.
+        This function constructs the search URL and navigates to it.
+        """
+        logger.info(f"🔍 Searching for people with query: '{search_query}' on {num_pages} page(s)")
+        # Construct the base URL for people search on LinkedIn
+        base_url = "https://www.linkedin.com/search/results/people/"
+        # Encode the search query
+        encoded_query = urllib.parse.quote(search_query)
+        search_url = f"{base_url}?keywords={encoded_query}"
+        # Optionally, append additional filters if required (e.g., location, industry)
+        
+        self.driver.get(search_url)
+        time.sleep(3)
+        logger.info("✅ People search page loaded.")
+        
+        # Pagination logic can be added here if needed.
+
     def stop_driver(self):
         """Stops the Chrome WebDriver."""
         if self.driver:

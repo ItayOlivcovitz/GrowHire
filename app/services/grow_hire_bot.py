@@ -4,6 +4,8 @@ from app.services.jobScraper.job_scraper import JobScraper
 from db.job_storage import JobStorage  
 from app.services.pdfReader.pdf_reader import PDFReader
 from app.services.feedScraper.feed_scraper import FeedScraper  
+from app.services.getConnected.get_connected import GetConnectedService  
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +21,7 @@ class GrowHireBot:
         self._job_storage = JobStorage()
         self._job_pdf_reader = PDFReader() 
         self.feed_scraper = FeedScraper(self._driver)  # ✅ Loads keywords from 'keywords.txt' if no list is provided
+        self.get_connected = GetConnectedService(self._driver)
         
     def search_jobs(self, job_title, location, filters=None):
         """Triggers job search through LinkedInNavigator."""
@@ -35,6 +38,13 @@ class GrowHireBot:
     def extract_job_descriptions(self, num_pages=1):
         """Triggers job descriptions extraction through JobScraper."""
         return self._job_scraper.extract_job_descriptions(num_pages=num_pages)
+    
+    def connect_people(self, search_query, num_pages=1):
+        """
+        Triggers the GetConnectedService to search for people on LinkedIn using the provided search query
+        and attempts to connect with them over the specified number of pages.
+        """
+        self.get_connected.search_and_connect(search_query, num_pages)
     
     
     def evaluate_job_matches(self, job_descriptions):
