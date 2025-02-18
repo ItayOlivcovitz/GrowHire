@@ -1,12 +1,13 @@
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QHBoxLayout, QPushButton
-from app.gui.actions_panel import ActionsPanel
-from .job_search_panel import JobSearchPanel
-from app.gui.job_actions_panel import JobActionsPanel
+from app.gui.panels.actions_panel import ActionsPanel
+from app.gui.panels.job_search_panel import JobSearchPanel
+from app.gui.panels.job_actions_panel import JobActionsPanel
 from app.gui.job_results_popup import JobResultsPopup  # ✅ Import JobResultsPopup
 from app.gui.feed_scroller import FeedScrollWorker
-from app.gui.view_results_panel import ViewResultsPanel
+from app.gui.panels.view_results_panel import ViewResultsPanel
 from app.services.grow_hire_bot import GrowHireBot
+from app.gui.panels.get_connected_panel import GetConnectedPanel
 from PySide6.QtCore import QThread
 
 import logging
@@ -40,26 +41,25 @@ class GrowHireGUI(QWidget):
         # ✅ Feed Scroller Section
         self.feed_scroller_box = QGroupBox("📜 Feed Scroller")
         feed_scroller_layout = QHBoxLayout()
-
-        # ✅ Start Scroller Button
         self.start_scroller_button = QPushButton("▶ Start Scroller")
         self.start_scroller_button.clicked.connect(self.start_feed_scroller)
         feed_scroller_layout.addWidget(self.start_scroller_button)
-
-        # ✅ Stop Scroller Button
         self.stop_scroller_button = QPushButton("⏹ Stop Scroller")
         self.stop_scroller_button.clicked.connect(self.stop_feed_scroller)
         self.stop_scroller_button.setEnabled(False)
         feed_scroller_layout.addWidget(self.stop_scroller_button)
-
         self.feed_scroller_box.setLayout(feed_scroller_layout)
         layout.addWidget(self.feed_scroller_box)
+
+        # ✅ Get Connected Section (new panel)
+        self.get_connected_panel = GetConnectedPanel(self.growhire_bot)
+        layout.addWidget(self.get_connected_panel)
 
         # ✅ Job Search Section
         self.job_search_panel = JobSearchPanel(self.growhire_bot)
         layout.addWidget(self.job_search_panel)
 
-        # ✅ Job Actions Section (Pass JobResultsPopup)
+        # ✅ Job Actions Section (Pass JobResultsPopup and JobSearchPanel)
         self.job_actions_panel = JobActionsPanel(self.growhire_bot, self.job_results_popup, self.job_search_panel)
         layout.addWidget(self.job_actions_panel)
 
