@@ -18,6 +18,9 @@ import urllib.parse
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+# Suppress WebDriver Manager logs
+logging.getLogger("WDM").setLevel(logging.WARNING)
+logging.getLogger("webdriver_manager").setLevel(logging.WARNING)
 
 class LinkedInNavigator:
     """Handles LinkedIn login and navigation."""
@@ -35,12 +38,15 @@ class LinkedInNavigator:
             logger.info("🚀 Starting Chrome WebDriver...")
             options = webdriver.ChromeOptions()
 
+            # Suppress DevTools logs and other unwanted messages
+            options.add_argument("--log-level=3")  # Suppress most Chrome logs (INFO=1, WARNING=2, ERROR=3)
+            options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])  # Suppress automation logs
+            options.add_experimental_option("useAutomationExtension", False)
+
             # Avoid bot detection
             options.add_argument("--disable-blink-features=AutomationControlled")
             options.add_argument("--incognito")
             options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            options.add_experimental_option("useAutomationExtension", False)
 
             # Detect if running in Docker
             is_docker = os.path.exists("/.dockerenv")
@@ -75,6 +81,7 @@ class LinkedInNavigator:
         except Exception as e:
             logger.error(f"❌ Failed to initialize Chrome WebDriver: {e}", exc_info=True)
             return None
+
 
 
     def search_people(self, search_query, num_pages=1):
