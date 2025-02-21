@@ -56,6 +56,9 @@ class JobScraper:
 
         for page in range(num_pages):
             time.sleep(2)  # Reduce initial wait time
+            
+            # ✅ Added debug log for current page number
+            logger.debug(f"DEBUG: Processing page number {page + 1} of {num_pages}")
             logger.info(f"📄 Scraping Page {page + 1}/{num_pages}...")
 
             # ✅ Locate the job list container
@@ -92,7 +95,8 @@ class JobScraper:
                 if job_data:
                     job_list.append(job_data)
                     total_jobs_added += 1
-                    logger.info(f"✅ Successfully extracted job: {job_data['job_title']} at {job_data['company_name']}")
+                    # ✅ Include page number in the log for clarity
+                    logger.info(f"✅ Successfully extracted job from Page {page + 1} - Job {index}: {job_data['job_title']} at {job_data['company_name']}")
 
             logger.info(f"✅ Extracted {total_jobs_added} jobs so far.")
 
