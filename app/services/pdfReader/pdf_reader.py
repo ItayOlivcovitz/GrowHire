@@ -35,7 +35,7 @@ class PDFReader:
         if not os.path.exists(self.file_path):
             raise FileNotFoundError(f"❌ PDF file not found: {self.file_path}")
 
-        print(f"✅ PDFReader initialized with file: {self.file_path}")
+       # print(f"✅ PDFReader initialized with file: {self.file_path}")
         self.text = None  # Placeholder for extracted text
     def read_pdf(self):
         """Extracts text from the entire PDF document."""
@@ -44,7 +44,7 @@ class PDFReader:
             return None
 
         try:
-            logger.info(f"📄 Reading PDF file: {self.file_path}")
+            #logger.info(f"📄 Reading PDF file: {self.file_path}")
             full_text = ""  # Store all extracted text
 
             with fitz.open(self.file_path) as doc:
