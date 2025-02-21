@@ -9,12 +9,14 @@ class JobSearchWorker(QObject):
     finished = Signal()  # ✅ Signals when processing is done
     results_ready = Signal(list)  # ✅ Sends job search results to the UI
 
-    def __init__(self, growhire_bot, job_title, location, filters=None):
+    def __init__(self, growhire_bot, job_title, location, filters=None, num_pages=1):
         super().__init__()
         self.growhire_bot = growhire_bot
         self.job_title = job_title
         self.location = location
         self.filters = filters if filters else {}
+        self.num_pages = num_pages  # ✅ Store the number of pages
+
 
     def run(self):
         """Runs the job search process in the background."""
@@ -23,7 +25,7 @@ class JobSearchWorker(QObject):
 
             self.growhire_bot.search_jobs(self.job_title, self.location, self.filters)
            
-            job_results = self.growhire_bot.extract_job_descriptions()
+            job_results = self.growhire_bot.extract_job_descriptions(num_pages=self.num_pages)
             
             if not job_results:
                 logger.warning("⚠️ No job results found. Exiting search.")

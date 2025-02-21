@@ -50,7 +50,7 @@ class JobActionsPanel(QGroupBox):
 
         logger.info("🚀 Starting job search...")
 
-        # Extract job title, location, and filters from the UI (assumes these fields exist in your JobSearchPanel)
+        # Extract job title, location, and filters from the UI
         job_title = self.job_search_panel.job_title_field.text() or "Software Engineer"
         location = self.job_search_panel.location_field.text() or "Israel"
         filters = self.job_search_panel.get_filters()
@@ -58,11 +58,15 @@ class JobActionsPanel(QGroupBox):
         # Log the filter values for debugging
         logger.info(f"🔍 Job search filters: {filters}")
 
-        # Create the QThread and Worker
+        # Retrieve the number of pages from the dropdown
+        num_pages = int(self.pages_dropdown.currentText())
+        logger.info(f"📄 Number of pages selected: {num_pages}")
+
+        # Create the QThread and Worker, now passing num_pages to the worker
         self.search_thread = QThread()
         logger.info(f"🔍 Type of growhire_bot: {type(self.growhire_bot)}")
 
-        self.search_worker = JobSearchWorker(self.growhire_bot, job_title, location, filters)
+        self.search_worker = JobSearchWorker(self.growhire_bot, job_title, location, filters, num_pages=num_pages)
         self.search_worker.moveToThread(self.search_thread)
 
         # Connect signals
@@ -76,6 +80,7 @@ class JobActionsPanel(QGroupBox):
 
         # Start the thread
         self.search_thread.start()
+
 
 
 
