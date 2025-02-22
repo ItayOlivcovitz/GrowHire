@@ -30,7 +30,7 @@ class NoPropagateTextEdit(QTextEdit):
 class AllLinkedInPostsPopup(QDialog):
     """Window that displays all LinkedIn posts from the database with keywords shown."""
 
-    def __init__(self, db_url=None, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("📋 All LinkedIn Posts")
         self.resize(1400, 750)  # Initial window size that can be resized
@@ -41,8 +41,7 @@ class AllLinkedInPostsPopup(QDialog):
             self.windowFlags() | Qt.Window | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint
         )
         
-        # Initialize JobStorage. If db_url is None, JobStorage will use environment variable/default.
-        self.job_storage = JobStorage(db_url=db_url)
+        self.job_storage = JobStorage()
         self.current_font_size = 12
         self.expanded_rows = {}
         
