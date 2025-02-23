@@ -78,6 +78,8 @@ class GrowHireGUI(QWidget):
             return
 
         logger.info("🔄 Starting Feed Scroller in a separate thread...")
+        
+        self.growhire_bot.linkedin_navigator.open_feed()
 
         # Create a new QThread
         self.feed_scroller_thread = QThread()
