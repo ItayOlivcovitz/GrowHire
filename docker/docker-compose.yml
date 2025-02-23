@@ -15,8 +15,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql  # ✅ Persistent database storage
-      - ../db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # ✅ Ensure correct path and read-only
-      - ../db/my.cnf:/etc/mysql/my.cnf:ro  # ✅ Mount custom config instead of copying
+      - ../db/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # ✅ Ensure correct path and read-only
+      - ../db/mysql/my.cnf:/etc/mysql/my.cnf:ro  # ✅ Mount custom config instead of copying
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     networks:
