@@ -1,10 +1,13 @@
-import os
-import logging
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QTextEdit
+    QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView,
+    QTextEdit, QLabel, QPushButton, QWidget, QScrollArea
 )
-from PySide6.QtGui import QFont
-from PySide6.QtCore import Qt, QEvent, QTimer
+from PySide6.QtGui import QFont, QDesktopServices
+from PySide6.QtCore import Qt, QEvent, QTimer, QUrl
+from datetime import datetime
+from urllib.parse import urlparse
+import json
+import logging
 from db.job_storage import JobStorage  # Adjust this import if needed
 
 logger = logging.getLogger(__name__)
@@ -54,11 +57,11 @@ class AllLinkedInPostsPopup(QDialog):
         self.resize(1800, 900)
         layout = QVBoxLayout()
 
-        # Setup table with 7 columns for the key fields (added "Keywords")
+        # Setup table with 6 columns (Emails column removed)
         self.results_table = QTableWidget()
-        self.results_table.setColumnCount(7)
+        self.results_table.setColumnCount(6)
         self.results_table.setHorizontalHeaderLabels([
-            "Post ID", "Publisher URL", "Publish Date", "Post Text", "Links", "Emails", "Keywords"
+            "Post ID", "Publisher URL", "Publish Date", "Post Text", "Links", "Keywords"
         ])
         self.results_table.setWordWrap(True)
         self.results_table.verticalHeader().setDefaultSectionSize(70)
@@ -67,15 +70,12 @@ class AllLinkedInPostsPopup(QDialog):
         self.results_table.setColumnWidth(2, 150)  # Publish Date
         self.results_table.setColumnWidth(3, 300)  # Post Text
         self.results_table.setColumnWidth(4, 200)  # Links
-        self.results_table.setColumnWidth(5, 200)  # Emails
-        self.results_table.setColumnWidth(6, 200)  # Keywords
+        self.results_table.setColumnWidth(5, 200)  # Keywords
 
         header = self.results_table.horizontalHeader()
-        # Stretch the Post Text, Links, Emails, and Keywords columns
         header.setSectionResizeMode(3, QHeaderView.Stretch)
         header.setSectionResizeMode(4, QHeaderView.Stretch)
         header.setSectionResizeMode(5, QHeaderView.Stretch)
-        header.setSectionResizeMode(6, QHeaderView.Stretch)
 
         font = QFont("Arial", 12)
         self.results_table.setFont(font)
@@ -101,49 +101,130 @@ class AllLinkedInPostsPopup(QDialog):
 
         try:
             posts = self.job_storage.get_all_linkedin_posts()
-            # Optionally, sort posts by publish_date descending
-            sorted_posts = sorted(posts, key=lambda p: p.publish_date or "", reverse=True)
+            # Sort posts by publish_date descending.
+            sorted_posts = sorted(
+                posts,
+                key=lambda p: p.publish_date if isinstance(p.publish_date, datetime)
+                                else datetime.min,
+                reverse=True
+            )
 
             for row_index, post in enumerate(sorted_posts):
                 self.results_table.insertRow(row_index)
 
-                # Extract details with fallbacks
+                # Extract details with fallbacks.
                 post_id = post.post_id or "N/A"
                 publisher_url = post.publisher_url or "N/A"
-                publish_date = post.publish_date.strftime("%Y-%m-%d %H:%M:%S") if post.publish_date else "N/A"
+
+                # Convert publish_date if it's a string.
+                dt = None
+                if post.publish_date:
+                    if isinstance(post.publish_date, str):
+                        try:
+                            dt = datetime.strptime(post.publish_date, "%Y-%m-%d %H:%M:%S")
+                        except Exception as e:
+                            logger.error(f"Error parsing publish_date '{post.publish_date}': {e}")
+                            dt = None
+                    else:
+                        dt = post.publish_date
+                publish_date = dt.strftime("%Y-%m-%d %H:%M:%S") if dt else "N/A"
+
                 post_text = post.post_text or "N/A"
-                # For JSON fields, display them as a simple comma-separated string if possible.
-                links = ", ".join(post.links) if isinstance(post.links, list) else str(post.links or "N/A")
-                emails = ", ".join(post.emails) if isinstance(post.emails, list) else str(post.emails or "N/A")
+
+                # --- Process Links ---
+                links_widget = QLabel("N/A")
+                if post.links:
+                    # Determine links_list from various formats.
+                    if isinstance(post.links, list):
+                        links_list = post.links
+                    elif isinstance(post.links, str) and post.links.startswith("[") and post.links.endswith("]"):
+                        try:
+                            links_list = json.loads(post.links)
+                        except Exception:
+                            links_list = [post.links]
+                    else:
+                        links_list = [post.links]
+
+                    valid_links = []
+                    for link in links_list:
+                        link = link.strip(" []\"'")
+                        if link and link != "N/A":
+                            valid_links.append(link)
+
+                    # Build clickable buttons for each link.
+                    if valid_links:
+                        # If only one link, create a single button.
+                        if len(valid_links) == 1:
+                            link = valid_links[0]
+                            parsed = urlparse(link)
+                            domain = parsed.netloc.lower() if parsed.netloc else link
+                            if "linkedin" in domain:
+                                button_text = "LinkedIn"
+                            else:
+                                if domain.startswith("www."):
+                                    domain = domain[4:]
+                                button_text = domain.capitalize()
+                            btn = QPushButton(button_text)
+                            btn.setStyleSheet("color: blue; text-decoration: underline; background: transparent; border: none;")
+                            btn.setCursor(Qt.PointingHandCursor)
+                            btn.clicked.connect(lambda checked, url=link: self.open_link(url))
+                            links_widget = btn
+                        else:
+                            # Create a container widget to hold all buttons.
+                            container = QWidget()
+                            layout_btn = QVBoxLayout()
+                            layout_btn.setContentsMargins(0, 0, 0, 0)
+                            for i, link in enumerate(valid_links):
+                                parsed = urlparse(link)
+                                domain = parsed.netloc.lower() if parsed.netloc else link
+                                if "linkedin" in domain:
+                                    base_text = "LinkedIn"
+                                else:
+                                    if domain.startswith("www."):
+                                        domain = domain[4:]
+                                    base_text = domain.capitalize()
+                                btn = QPushButton(f"{base_text} {i+1}")
+                                btn.setStyleSheet("color: blue; text-decoration: underline; background: transparent; border: none;")
+                                btn.setCursor(Qt.PointingHandCursor)
+                                btn.clicked.connect(lambda checked, url=link: self.open_link(url))
+                                layout_btn.addWidget(btn)
+                            container.setLayout(layout_btn)
+                            # Wrap the container in a scroll area to add a scrollbar.
+                            scroll_area = QScrollArea()
+                            scroll_area.setWidget(container)
+                            scroll_area.setWidgetResizable(True)
+                            scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+                            scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+                            scroll_area.setMinimumHeight(50)  # Adjust the height as needed
+                            links_widget = scroll_area
+
                 # Get the matched keywords from the DB field 'keyword_found'
                 keywords = post.keyword_found if hasattr(post, 'keyword_found') and post.keyword_found else "N/A"
 
-                # Create table items
+                # Create table items for columns that don't require clickable links.
                 post_id_item = QTableWidgetItem(post_id)
                 publisher_url_item = QTableWidgetItem(publisher_url)
                 publish_date_item = QTableWidgetItem(publish_date)
-                # Use a QTextEdit for potentially long post text
+
+                # Use a QTextEdit for potentially long post text.
                 post_text_widget = NoPropagateTextEdit()
                 post_text_widget.setPlainText(post_text)
-                for widget in [post_text_widget]:
-                    widget.setReadOnly(True)
-                    widget.setFont(QFont("Arial", self.current_font_size))
-                    widget.setStyleSheet("border: none; background: transparent;")
+                post_text_widget.setReadOnly(True)
+                post_text_widget.setFont(QFont("Arial", self.current_font_size))
+                post_text_widget.setStyleSheet("border: none; background: transparent;")
 
-                links_item = QTableWidgetItem(links)
-                emails_item = QTableWidgetItem(emails)
                 keywords_item = QTableWidgetItem(keywords)
 
-                # Insert items into the table
+                # Insert items into the table.
+                # Column mapping: 0: Post ID, 1: Publisher URL, 2: Publish Date, 3: Post Text, 4: Links, 5: Keywords
                 self.results_table.setItem(row_index, 0, post_id_item)
                 self.results_table.setItem(row_index, 1, publisher_url_item)
                 self.results_table.setItem(row_index, 2, publish_date_item)
                 self.results_table.setCellWidget(row_index, 3, post_text_widget)
-                self.results_table.setItem(row_index, 4, links_item)
-                self.results_table.setItem(row_index, 5, emails_item)
-                self.results_table.setItem(row_index, 6, keywords_item)
+                self.results_table.setCellWidget(row_index, 4, links_widget)
+                self.results_table.setItem(row_index, 5, keywords_item)
 
-                # Set row height based on post text length
+                # Set row height based on post text length.
                 content_length = len(post_text)
                 desired_height = min(500, max(120, content_length * 2))
                 self.results_table.setRowHeight(row_index, desired_height + 20)
@@ -152,6 +233,9 @@ class AllLinkedInPostsPopup(QDialog):
             logger.info(f"✅ Loaded {len(sorted_posts)} LinkedIn posts.")
         except Exception as e:
             logger.error(f"❌ Error loading LinkedIn posts: {e}")
+
+    def open_link(self, url):
+        QDesktopServices.openUrl(QUrl(url))
 
     def update_row_heights(self, expanded: bool):
         """Expand or collapse row heights for all rows."""
