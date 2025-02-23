@@ -12,6 +12,8 @@ from sqlalchemy.sql import text
 from db.models.job_description import JobDescription
 from db.models.linkedin_post import LinkedInPost
 from db.sqlite import sqlite
+from datetime import datetime
+
 from pathlib import Path
 
 
@@ -80,15 +82,6 @@ class JobStorage:
         logger.info("✅ Database Storage Initialized")
     
 
-    from pathlib import Path
-import os
-import time
-import logging
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import OperationalError
-
-logger = logging.getLogger(__name__)
 
 class JobStorage:
     def __init__(self, retries=5, delay=5):
@@ -183,10 +176,25 @@ class JobStorage:
     def save_job_posts_to_db(self, post_data_list):
         """Saves LinkedIn posts to the database, including links, emails, and keyword_found."""
         session = self.Session()
+        logger.debug(f"Starting to save {len(post_data_list)} LinkedIn posts to the database.")
+        
+        # Helper function to convert date strings to datetime objects
+        def convert_date(date_value):
+            if isinstance(date_value, str):
+                try:
+                    # Adjust the format string to match your date format
+                    return datetime.strptime(date_value, "%Y-%m-%d %H:%M:%S")
+                except Exception as e:
+                    logger.error(f"Failed to parse date '{date_value}': {e}")
+                    return None
+            return date_value
+
         try:
-            for post_data in post_data_list:
+            for idx, post_data in enumerate(post_data_list):
+                logger.debug(f"Processing item #{idx+1}: {post_data}")
+
                 if not isinstance(post_data, dict):  # Ensure correct data format
-                    logger.error(f"❌ Invalid post format: {post_data}")
+                    logger.error(f"❌ Invalid post format (not a dict): {post_data}")
                     continue
 
                 post_id = post_data.get("post_id")
@@ -194,21 +202,26 @@ class JobStorage:
                     logger.error(f"❌ Missing post_id in post: {post_data}")
                     continue  # Skip invalid posts
 
+                # Convert publish_date if needed
+                post_date_converted = convert_date(post_data.get("post_date"))
+
                 # Check if the post already exists
                 post = session.query(LinkedInPost).filter_by(post_id=post_id).first()
 
-                if post:  # Update existing post
+                if post:
+                    logger.debug(f"Updating existing post with post_id={post_id}")
                     post.publisher_url = post_data.get("post_publisher_url")
-                    post.publish_date = post_data.get("post_date")
+                    post.publish_date = post_date_converted
                     post.post_text = post_data.get("post_text", "")
                     post.links = json.dumps(post_data.get("post_links", []))  # Store links as JSON
                     post.emails = json.dumps(post_data.get("post_emails", []))  # Store emails as JSON
                     post.keyword_found = post_data.get("keyword_found")
-                else:  # Insert new post
+                else:
+                    logger.debug(f"Inserting new post with post_id={post_id}")
                     post = LinkedInPost(
                         post_id=post_id,
                         publisher_url=post_data.get("post_publisher_url"),
-                        publish_date=post_data.get("post_date"),
+                        publish_date=post_date_converted,
                         post_text=post_data.get("post_text", ""),
                         links=json.dumps(post_data.get("post_links", [])),  # Store links as JSON
                         emails=json.dumps(post_data.get("post_emails", [])),  # Store emails as JSON
@@ -225,8 +238,8 @@ class JobStorage:
 
         finally:
             session.close()
-
-
+            logger.debug("Database session closed.")
+            
     def get_all_job_descriptions(self):
             """Retrieve all job description records from the database."""
             session = self.Session()
