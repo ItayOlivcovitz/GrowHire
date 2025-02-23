@@ -1,17 +1,15 @@
 openai==0.28.0
-pillow==11.1.0  # Image processing library
-pymupdf==1.25.2  # PyMuPDF (also known as fitz)
-pytesseract==0.3.13  # OCR (Optical Character Recognition)
-python-dotenv==1.0.1  # Environment variable management
-PySide6==6.8.2  # Qt for Python GUI framework
+pillow==11.1.0         # Image processing library
+pymupdf==1.25.2        # PyMuPDF (also known as fitz)
+pytesseract==0.3.13    # OCR (Optical Character Recognition)
+python-dotenv==1.0.1   # Environment variable management
+PySide6==6.8.2         # Qt for Python GUI framework
 PySide6_Addons==6.8.2
 PySide6_Essentials==6.8.2
-requests==2.32.3  # HTTP requests
-selenium==4.28.1  # Web automation
-SQLAlchemy==2.0.37  # Database ORM
+requests==2.32.3       # HTTP requests
+selenium==4.28.1       # Web automation
+SQLAlchemy==2.0.37     # Database ORM
 webdriver_manager==4.0.2  # ChromeDriver auto-manager
-pymysql==1.1.0  # ✅ MySQL database driver (NEW)
-cryptography==41.0.0  # Added for MySQL authentication support
-colorama==0.4.6  # Terminal text coloring
-
-
+pymysql==1.1.0         # ✅ MySQL database driver (using PyMySQL instead of MySQLdb)
+cryptography==41.0.0   # Added for MySQL authentication support
+colorama==0.4.6        # Terminal text coloring
