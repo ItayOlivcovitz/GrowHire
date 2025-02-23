@@ -1,4 +1,7 @@
 import os
+import pymysql
+pymysql.install_as_MySQLdb()
+
 from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -33,5 +36,4 @@ def init_db(engine):
     """Create tables if they don't exist."""
     Base.metadata.create_all(bind=engine)
 
-# Note: Do not auto-run init_db() here. Instead, call init_db(engine) from your application
-# (for example, from your JobStorage class after creating the engine).
+# Note: Do not auto-run init_db() here. Instead, call init_db(engine) from your application.
