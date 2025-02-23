@@ -4,7 +4,7 @@ from app.gui.panels.actions_panel import ActionsPanel
 from app.gui.panels.job_search_panel import JobSearchPanel
 from app.gui.panels.job_actions_panel import JobActionsPanel
 from app.gui.job_results_popup import JobResultsPopup  # ✅ Import JobResultsPopup
-from app.gui.feed_scroller import FeedScrollWorker
+from app.gui.workers.feed_scroller_worker import FeedScrollWorker
 from app.gui.panels.view_results_panel import ViewResultsPanel
 from app.services.grow_hire_bot import GrowHireBot
 from app.gui.panels.get_connected_panel import GetConnectedPanel
@@ -72,44 +72,70 @@ class GrowHireGUI(QWidget):
 
 
     def start_feed_scroller(self):
-        """Starts the feed scroller on a separate QThread."""
-        if self.feed_scroller_thread and self.feed_scroller_thread.isRunning():
+        """Starts the feed scroller in a separate thread."""
+        if self.feed_scroller_thread is not None and self.feed_scroller_thread.isRunning():
             logger.warning("⚠️ Feed Scroller is already running!")
-            return  
+            return
 
-        logger.info("🔄 Starting Feed Scroller...")
+        logger.info("🔄 Starting Feed Scroller in a separate thread...")
 
+        # Create a new QThread
         self.feed_scroller_thread = QThread()
+        # Create the worker instance
         self.feed_scroller_worker = FeedScrollWorker(self.feed_scraper, max_scrolls=15)
+        # Move the worker to the new thread
         self.feed_scroller_worker.moveToThread(self.feed_scroller_thread)
-
+        
+        # Connect thread's started signal to the worker's run method
         self.feed_scroller_thread.started.connect(self.feed_scroller_worker.run)
+        # Connect worker signals
         self.feed_scroller_worker.scroll_completed.connect(self.on_scrolling_complete)
-        self.feed_scroller_worker.finished.connect(self.feed_scroller_thread.quit)
-        self.feed_scroller_worker.finished.connect(self.feed_scroller_worker.deleteLater)
+        self.feed_scroller_worker.finished.connect(self.on_scroller_finished)
+        # Optionally, clean up the worker and thread when done:
         self.feed_scroller_thread.finished.connect(self.feed_scroller_thread.deleteLater)
+        self.feed_scroller_worker.finished.connect(self.feed_scroller_worker.deleteLater)
 
+        # Start the thread
         self.feed_scroller_thread.start()
 
+        # Update UI buttons
         self.start_scroller_button.setEnabled(False)
         self.stop_scroller_button.setEnabled(True)
 
+
+
+    def on_scroller_finished(self):
+        """Slot called when the feed scroller thread has finished."""
+        logger.info("✅ Feed Scroller has finished.")
+        # Reset the thread reference
+        self.feed_scroller_thread = None
+        # Update UI buttons: enable the start button and disable the stop button
+        self.start_scroller_button.setEnabled(True)
+        self.stop_scroller_button.setEnabled(False)
+
+
+
     def stop_feed_scroller(self):
         """Stops the feed scroller thread safely."""
-        if not self.feed_scroller_worker or not self.feed_scroller_thread.isRunning():
+        if self.feed_scroller_thread is None or not self.feed_scroller_thread.isRunning():
             logger.warning("⚠️ Feed Scroller is not running!")
             return
 
         logger.info("🚨 Stopping Feed Scroller...")
-        self.feed_scroller_worker.stop()
+        # Call the worker's stop method to set the flag.
+        if hasattr(self, 'feed_scroller_worker') and self.feed_scroller_worker is not None:
+            self.feed_scroller_worker.stop()
+
         self.feed_scroller_thread.quit()
         self.feed_scroller_thread.wait()
 
+        # Reset references
         self.feed_scroller_thread = None
         self.feed_scroller_worker = None
 
         self.start_scroller_button.setEnabled(True)
         self.stop_scroller_button.setEnabled(False)
+
 
     def on_scrolling_complete(self, extracted_posts):
         """Handles new posts extracted from the feed scroller."""
