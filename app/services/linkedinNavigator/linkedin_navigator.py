@@ -155,6 +155,15 @@ class LinkedInNavigator:
             self.driver.get(search_url)
             time.sleep(3)
             logger.info("✅ Job search page loaded.")
+
+    def open_feed(self):
+        """Open the LinkedIn feed page."""
+        logger.info("Opening LinkedIn feed.")
+        feed_url = "https://www.linkedin.com/feed/"
+        self.driver.get(feed_url)
+        time.sleep(3)
+        logger.info("✅ LinkedIn feed page loaded.")
+
             
     def open_linkedin(self):
         """Opens LinkedIn, logs in, and handles the verification step."""
