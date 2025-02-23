@@ -57,25 +57,24 @@ class AllLinkedInPostsPopup(QDialog):
         self.resize(1800, 900)
         layout = QVBoxLayout()
 
-        # Setup table with 6 columns (Emails column removed)
+        # Setup table with 5 columns (Post ID removed)
         self.results_table = QTableWidget()
-        self.results_table.setColumnCount(6)
+        self.results_table.setColumnCount(5)
         self.results_table.setHorizontalHeaderLabels([
-            "Post ID", "Publisher URL", "Publish Date", "Post Text", "Links", "Keywords"
+            "Publisher URL", "Publish Date", "Post Text", "Links", "Keywords"
         ])
         self.results_table.setWordWrap(True)
         self.results_table.verticalHeader().setDefaultSectionSize(70)
-        self.results_table.setColumnWidth(0, 150)  # Post ID
-        self.results_table.setColumnWidth(1, 250)  # Publisher URL
-        self.results_table.setColumnWidth(2, 150)  # Publish Date
-        self.results_table.setColumnWidth(3, 300)  # Post Text
-        self.results_table.setColumnWidth(4, 200)  # Links
-        self.results_table.setColumnWidth(5, 200)  # Keywords
+        self.results_table.setColumnWidth(0, 100)  # Publisher URL
+        self.results_table.setColumnWidth(1, 150)  # Publish Date
+        self.results_table.setColumnWidth(2, 300)  # Post Text
+        self.results_table.setColumnWidth(3, 150)  # Links
+        self.results_table.setColumnWidth(4, 200)  # Keywords
 
         header = self.results_table.horizontalHeader()
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
         header.setSectionResizeMode(3, QHeaderView.Stretch)
         header.setSectionResizeMode(4, QHeaderView.Stretch)
-        header.setSectionResizeMode(5, QHeaderView.Stretch)
 
         font = QFont("Arial", 12)
         self.results_table.setFont(font)
@@ -112,8 +111,6 @@ class AllLinkedInPostsPopup(QDialog):
             for row_index, post in enumerate(sorted_posts):
                 self.results_table.insertRow(row_index)
 
-                # Extract details with fallbacks.
-                post_id = post.post_id or "N/A"
                 publisher_url = post.publisher_url or "N/A"
 
                 # Convert publish_date if it's a string.
@@ -151,9 +148,9 @@ class AllLinkedInPostsPopup(QDialog):
                         if link and link != "N/A":
                             valid_links.append(link)
 
-                    # Build clickable buttons for each link.
-                    if valid_links:
-                        # If only one link, create a single button.
+                    # Check the number of links: if more than 6, do not display them.
+                    if len(valid_links) <= 6 and valid_links:
+                        # Build clickable buttons for each link.
                         if len(valid_links) == 1:
                             link = valid_links[0]
                             parsed = urlparse(link)
@@ -202,7 +199,6 @@ class AllLinkedInPostsPopup(QDialog):
                 keywords = post.keyword_found if hasattr(post, 'keyword_found') and post.keyword_found else "N/A"
 
                 # Create table items for columns that don't require clickable links.
-                post_id_item = QTableWidgetItem(post_id)
                 publisher_url_item = QTableWidgetItem(publisher_url)
                 publish_date_item = QTableWidgetItem(publish_date)
 
@@ -216,13 +212,12 @@ class AllLinkedInPostsPopup(QDialog):
                 keywords_item = QTableWidgetItem(keywords)
 
                 # Insert items into the table.
-                # Column mapping: 0: Post ID, 1: Publisher URL, 2: Publish Date, 3: Post Text, 4: Links, 5: Keywords
-                self.results_table.setItem(row_index, 0, post_id_item)
-                self.results_table.setItem(row_index, 1, publisher_url_item)
-                self.results_table.setItem(row_index, 2, publish_date_item)
-                self.results_table.setCellWidget(row_index, 3, post_text_widget)
-                self.results_table.setCellWidget(row_index, 4, links_widget)
-                self.results_table.setItem(row_index, 5, keywords_item)
+                # New column mapping: 0: Publisher URL, 1: Publish Date, 2: Post Text, 3: Links, 4: Keywords
+                self.results_table.setItem(row_index, 0, publisher_url_item)
+                self.results_table.setItem(row_index, 1, publish_date_item)
+                self.results_table.setCellWidget(row_index, 2, post_text_widget)
+                self.results_table.setCellWidget(row_index, 3, links_widget)
+                self.results_table.setItem(row_index, 4, keywords_item)
 
                 # Set row height based on post text length.
                 content_length = len(post_text)
@@ -241,7 +236,7 @@ class AllLinkedInPostsPopup(QDialog):
         """Expand or collapse row heights for all rows."""
         for row_index in range(self.results_table.rowCount()):
             if expanded:
-                widget = self.results_table.cellWidget(row_index, 3)
+                widget = self.results_table.cellWidget(row_index, 2)
                 if widget:
                     content_length = len(widget.toPlainText())
                     new_height = min(500, max(120, content_length * 2))
