@@ -18,9 +18,9 @@ class PDFReader:
         # Default path based on environment
         if file_path is None:
             if is_docker:
-                self.file_path = "/app/resume/Resume.pdf"  # ✅ Use forward slashes for Linux/Docker
+                self.file_path = "/app/resume/resume.pdf"  # ✅ Use forward slashes for Linux/Docker
             else:
-                self.file_path = os.path.join("resume", "Resume.pdf")  # Windows & Linux compatible
+                self.file_path = os.path.join("resume", "resume.pdf")  # Windows & Linux compatible
         else:
             self.file_path = file_path  # Use provided path
 
@@ -95,7 +95,7 @@ class PDFReader:
 
 # Example Usage
 if __name__ == "__main__":
-    pdf_reader = PDFReader("GrowHire/resume/Resume.pdf")
+    pdf_reader = PDFReader("GrowHire/resume/resume.pdf")
     text = pdf_reader.get_text()
 
     if text:

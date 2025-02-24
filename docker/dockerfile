@@ -56,7 +56,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Create the directory for the resume and copy the Resume.pdf file.
 RUN mkdir -p /app/resume
-COPY resume/Resume.pdf /app/resume/Resume.pdf
+COPY resume/resume.pdf /app/resume/resume.pdf
 
 # Copy the rest of the application code into the container.
 COPY . .
