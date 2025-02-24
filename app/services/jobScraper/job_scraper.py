@@ -20,7 +20,7 @@ class JobScraper:
     """Extracts job details from LinkedIn."""
     def __init__(self, driver): 
             self.driver = driver
-            self.resume_path = os.getenv("RESUME_PATH", "/Resume.pdf")
+            self.resume_path = os.getenv("RESUME_PATH", "/resume.pdf")
 
             # Check if CHAT_SERVICE is set and not empty
             chat_service_env = os.getenv("AI_CHAT_SERVICE_URL", "").strip()
