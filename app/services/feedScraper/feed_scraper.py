@@ -125,7 +125,7 @@ class FeedScraper:
             return []
 
 
-    def scroll_and_extract_posts(self, max_scrolls=5):
+    def scroll_and_extract_posts(self, max_scrolls=15):
         """Scrolls through the LinkedIn feed and extracts only posts containing specific keywords."""
         logger.info("🔄 Starting to scroll through LinkedIn feed...")
 
