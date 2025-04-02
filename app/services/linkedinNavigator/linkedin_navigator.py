@@ -23,15 +23,24 @@ logging.getLogger("WDM").setLevel(logging.WARNING)
 logging.getLogger("webdriver_manager").setLevel(logging.WARNING)
 
 class LinkedInNavigator:
-    """Handles LinkedIn login and navigation."""
+    _instance = None  # class-level variable to store the singleton
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            logger.info("🆕 Creating a new LinkedInNavigator singleton instance.")
+            cls._instance = super().__new__(cls)
+        else:
+            logger.info("♻️ Returning existing LinkedInNavigator singleton instance.")
+        return cls._instance
 
     def __init__(self):
-        """Automatically starts the WebDriver when an instance is created."""
-        self.driver = self.start_driver()  # ✅ Calls the method correctly
+        if hasattr(self, "_initialized") and self._initialized:
+            return  # Prevent reinitialization
+        self.driver = self.start_driver()
         if not self.driver:
             logger.error("🚫 Unable to start WebDriver. Exiting.")
             exit(1)
-
+        self._initialized = True
     def start_driver(self):
         """Starts Chrome WebDriver and returns the driver instance."""
         try:

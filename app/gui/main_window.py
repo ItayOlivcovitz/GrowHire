@@ -8,6 +8,8 @@ from app.gui.workers.feed_scroller_worker import FeedScrollWorker
 from app.gui.panels.view_results_panel import ViewResultsPanel
 from app.services.grow_hire_bot import GrowHireBot
 from app.gui.panels.get_connected_panel import GetConnectedPanel
+from app.gui.panels.notification_panel import NotificationPanel
+from app.services.notifications.send_notifications import SendNotifications
 from PySide6.QtCore import QThread
 
 import logging
@@ -25,6 +27,9 @@ class GrowHireGUI(QWidget):
 
         # ✅ Define job results pop-up BEFORE calling initUI
         self.job_results_popup = JobResultsPopup(self)
+
+        # Create a DiscoredBot instance for notifications
+        self.discored_bot =  growhire_bot.discored_bot 
 
         self.initUI()
 
@@ -66,6 +71,10 @@ class GrowHireGUI(QWidget):
         # ✅ View Results Section
         self.view_results_panel = ViewResultsPanel(self.growhire_bot)
         layout.addWidget(self.view_results_panel)
+
+         #✅ Notifications Panel
+        self.notification_panel = NotificationPanel(self.discored_bot)
+        layout.addWidget(self.notification_panel)
 
         self.setLayout(layout)
 

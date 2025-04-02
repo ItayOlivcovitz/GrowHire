@@ -1,0 +1,26 @@
+[
+    {
+        "job_title": "Junior",
+        "location": "Israel",
+        "filters": {
+            "date_posted": "Past 24 hours",
+            "experience_level": "Any"
+        }
+    },
+    {
+        "job_title": "Developer",
+        "location": "Israel",
+        "filters": {
+            "date_posted": "Past 24 hours",
+            "experience_level": "Any"
+        }
+    },
+    {
+        "job_title": "Junior Developer",
+        "location": "Israel",
+        "filters": {
+            "date_posted": "Past 24 hours",
+            "experience_level": "Entry level"
+        }
+    }
+]

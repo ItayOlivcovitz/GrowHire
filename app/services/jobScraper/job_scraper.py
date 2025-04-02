@@ -47,7 +47,6 @@ class JobScraper:
             logger.error(f"❌ Error reading prompt file: {e}")
         return None
 
-
     def extract_job_descriptions(self, num_pages=1):
         """Extracts job descriptions dynamically from LinkedIn by visiting every job component."""
         
@@ -122,31 +121,40 @@ class JobScraper:
         
         return job_list
 
-
-        
-
     def extract_single_job(self, job, index, seen_jobs):
         """Extracts a single job description dynamically using Selenium."""
         
-        job_description = "Not Found"  # Ensure it's initialized
+        job_description = "Not Found"
 
         try:
             job_id = job.get_attribute("data-job-id")
             if not job_id:
                 logger.warning(f"⚠️ Job {index}: Missing job ID, skipping.")
-                return None  # Skip if job ID is not available
+                return None
 
-            if job_id in seen_jobs:  # 🚨 Avoid extracting the same job twice
+            if job_id in seen_jobs:
                 logger.info(f"🔄 Job {index}: Skipping duplicate job (ID: {job_id})")
                 return None
-            seen_jobs.add(job_id)  # Mark this job as processed
+            seen_jobs.add(job_id)
 
-            # ✅ Scroll and click job
             self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", job)
-            job.click()
-            time.sleep(1)  # Allow UI to update
 
-            # ✅ Wait for job details panel to load (Max 5 seconds)
+            # 🔁 If this is the first job, force a re-click by selecting another job and then returning
+            if index == 0:
+                temp_job_elements = self.driver.find_elements(By.CSS_SELECTOR, '.job-card-container--clickable')
+                if len(temp_job_elements) > 1:
+                    try:
+                        temp_job_elements[1].click()
+                        time.sleep(0.8)
+                        job.click()
+                        time.sleep(1)
+                    except Exception:
+                        logger.warning("⚠️ Could not force refresh first job card.")
+            else:
+                job.click()
+                time.sleep(1)
+
+            # ⏳ Wait for job description content to load
             WebDriverWait(self.driver, 5).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".jobs-details__main-content"))
             )
@@ -157,28 +165,31 @@ class JobScraper:
                 return titleElement ? titleElement.innerText.trim() : "Unknown Title";
             """) or "Unknown Title"
 
-            # ✅ Extract Company Name
+            # ✅ Extract Company Name from job card
             company_name = self.driver.execute_script(f"""
-                let jobCards = document.querySelectorAll('.job-card-container--clickable');
-                if (jobCards.length >= {index}) {{
-                    let selectedJob = jobCards[{index - 1}];  
-                    let companyElement = selectedJob.querySelector('.topcard__flavor, .artdeco-entity-lockup__subtitle');
-                    return companyElement ? companyElement.innerText.trim() : "Unknown Company";
-                }} else {{
+                    let jobCards = document.querySelectorAll('.job-card-container--clickable');
+                    let i = Math.max(0, {index - 1});  // make sure it's not negative
+                    if (jobCards.length > i) {{
+                        let selectedJob = jobCards[i];
+                        if (selectedJob) {{
+                            let companyElement = selectedJob.querySelector('.topcard__flavor, .artdeco-entity-lockup__subtitle');
+                            return companyElement ? companyElement.innerText.trim() : "Unknown Company";
+                        }}
+                    }}
                     return "Unknown Company";
-                }}
-            """) or "Unknown Company"
+                """) or "Unknown Company"
 
-            # ✅ Extract Job Location
+
+            # ✅ Extract Location
             job_location = self.driver.execute_script("""
                 let locationElement = document.querySelector('.job-card-container__metadata-wrapper li span[dir="ltr"]');
                 return locationElement ? locationElement.innerText.trim() : "Unknown Location";
             """) or "Unknown Location"
 
-            # ✅ Extract Job URL
+            # ✅ Generate full job URL
             job_full_url = f"https://www.linkedin.com/jobs/view/{job_id}/" if job_id else "Unknown URL"
 
-            # ✅ Extract Number of Connections
+            # ✅ Extract Connections
             connections_text = self.driver.execute_script("""
                 let connectionsElement = document.querySelector(
                     ".job-card-container__job-insight-text, .job-details-jobs-unified-top-card__connections"
@@ -186,7 +197,6 @@ class JobScraper:
                 return connectionsElement ? connectionsElement.innerText.trim() : "0 connections";
             """) or "0 connections"
 
-            # Convert connections to an integer
             connections = 0
             try:
                 match = re.search(r"(\d+)", connections_text)
@@ -195,10 +205,36 @@ class JobScraper:
             except Exception:
                 logger.warning(f"⚠️ Job {index}: Could not extract number of connections")
 
-            # ✅ Extract Job Description - Wait until it changes from the previous job
-            try:
-                previous_description = job_description  # Save previous description
+            # ✅ Extract Posting Time with fallback strategy
+            WebDriverWait(self.driver, 3).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '.tvm__text.tvm__text--low-emphasis, .tvm__text.tvm__text--positive strong span'))
+            )
 
+            posting_time_text = self.driver.execute_script("""
+                function getPostingTime() {
+                try {
+                    const timeElement = document.querySelector('.tvm__text.tvm__text--positive strong span');
+                    let postingTime = timeElement ? timeElement.innerText.trim() : null;
+
+                    if (!postingTime) {
+                    const elements = document.querySelectorAll('.tvm__text.tvm__text--low-emphasis');
+                    const texts = Array.from(elements)
+                        .map(e => e.innerText.trim())
+                        .filter(t => t.length > 0);
+                    postingTime = texts[2] || "Unknown";
+                    }
+
+                    return postingTime || "Unknown";
+                } catch (err) {
+                    return "Unknown";
+                }
+                }
+                return getPostingTime();
+            """) or "Unknown"
+
+            # ✅ Extract Job Description with retry fallback
+            try:
+                previous_description = job_description
                 WebDriverWait(self.driver, 5).until(
                     lambda driver: driver.execute_script("""
                         let descElement = document.querySelector("#job-details");
@@ -212,30 +248,29 @@ class JobScraper:
                 """)
             except Exception:
                 logger.warning(f"⚠️ Job {index}: Failed to extract job description, retrying...")
-                
-                # ✅ Retry extraction after a short delay
-                time.sleep(2)  # Let the page fully load
+                time.sleep(2)
                 job_description = self.driver.execute_script("""
                     let descriptionElement = document.querySelector("#job-details");
                     return descriptionElement ? descriptionElement.innerText.trim() : "Not Found";
                 """)
 
-            # ✅ Ensure everything is a string and return the result
             return {
                 "job_title": str(job_title),
                 "company_name": str(company_name),
                 "job_location": str(job_location),
                 "job_url": str(job_full_url),
-                "connections": connections,  # Keep this as an integer for sorting
-                "job_description": str(job_description)
+                "connections": connections,
+                "job_description": str(job_description),
+                "posting_time_text": str(posting_time_text)
             }
 
         except Exception as e:
             logger.error(f"❌ Error extracting job {index}: {e}")
-            return None  # Prevent crashing the entire script
+            return None
 
         finally:
             logger.info(f"✅ Job {index}: Extraction complete.")
+
 
 
     def evaluate_single_job(self, index, job_description):
@@ -321,7 +356,6 @@ class JobScraper:
         logger.error("❌ Match Score not found in response.")
         return None
     
-
     def evaluate_job_matches(self, job_descriptions):
             """Evaluates multiple job descriptions in parallel using ThreadPoolExecutor."""
             if not self.resume_text:
@@ -342,5 +376,25 @@ class JobScraper:
 
             logger.info("✅ All jobs evaluated in parallel.")
             return job_match_results
+
+    def is_posted_within_5_hours(self, posting_time_text):
+        """
+        Returns True if the job was posted within the last 5 hours.
+        """
+        if not posting_time_text or "Unknown" in posting_time_text:
+            return False
+
+        text = posting_time_text.lower()
+
+        if "minute" in text:
+            return True
+
+        if "hour" in text:
+            match = re.search(r"(\d+)", text)
+            if match:
+                return int(match.group(1)) <= 5
+
+        return False
+
 
    

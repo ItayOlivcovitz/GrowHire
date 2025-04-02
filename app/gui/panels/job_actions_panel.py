@@ -67,7 +67,7 @@ class JobActionsPanel(QGroupBox):
         logger.info(f"🔍 Type of growhire_bot: {type(self.growhire_bot)}")
 
         self.search_worker = JobSearchWorker(self.growhire_bot, job_title, location, filters, num_pages=num_pages)
-        self.search_worker.moveToThread(self.search_thread)
+        self.search_worker.run()
 
         # Connect signals
         self.search_thread.started.connect(self.search_worker.run)

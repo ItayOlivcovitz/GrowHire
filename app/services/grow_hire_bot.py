@@ -5,6 +5,7 @@ from db.job_storage import JobStorage
 from app.services.pdfReader.pdf_reader import PDFReader
 from app.services.feedScraper.feed_scraper import FeedScraper  
 from app.services.getConnected.get_connected import GetConnectedService  
+from app.services.notifications.send_notifications import SendNotifications
 
 
 logger = logging.getLogger(__name__)
@@ -17,11 +18,16 @@ class GrowHireBot:
         
         self.linkedin_navigator = LinkedInNavigator()  # Start LinkedInNavigator (Creates a WebDriver)
         self._driver = self.linkedin_navigator.driver  # 🔹 Extract WebDriver instance
-        self._job_scraper = JobScraper(self._driver)  # 🔹 Pass the WebDriver to JobScraper
+        self.job_scraper = JobScraper(self._driver)  # 🔹 Pass the WebDriver to JobScraper
         self._job_storage = JobStorage()
         self._job_pdf_reader = PDFReader() 
         self.feed_scraper = FeedScraper(self._driver)  # ✅ Loads keywords from 'keywords.txt' if no list is provided
         self.get_connected = GetConnectedService(self._driver)
+
+        
+        # Initialize DiscoredBot with the existing JobScraper instance.
+        api_endpoint = "http://example.com/api"  # Replace with your actual API endpoint
+        self.discored_bot = SendNotifications( job_scraper=self.job_scraper, linkedin_navigator=self.linkedin_navigator)
         
     def search_jobs(self, job_title, location, filters=None):
         """Triggers job search through LinkedInNavigator."""
