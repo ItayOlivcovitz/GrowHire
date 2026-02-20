@@ -35,8 +35,10 @@ def main():
         logger.info("🚀 Starting GrowHireBot...")
         growhire_bot = GrowHireBot()
 
-        # ✅ Start the GUI application
+        # Start the GUI application
         app = QApplication(sys.argv)
+        from app.gui.styles import get_stylesheet
+        app.setStyleSheet(get_stylesheet())
         window = GrowHireGUI(growhire_bot)
         window.show()
 

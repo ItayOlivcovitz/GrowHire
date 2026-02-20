@@ -12,7 +12,7 @@ class ActionsPanel(QGroupBox):
     """Panel for LinkedIn actions like opening LinkedIn and logging in."""
 
     def __init__(self, growhire_bot):
-        super().__init__("🚀 Actions")
+        super().__init__("Actions")
         self.growhire_bot = growhire_bot
         self.thread = None  # ✅ Store thread reference
         self.worker = None  # ✅ Store worker reference
@@ -22,8 +22,7 @@ class ActionsPanel(QGroupBox):
         """Initialize UI components."""
         layout = QVBoxLayout()
 
-        # ✅ Open LinkedIn Button
-        self.login_button = QPushButton("🌐 Open LinkedIn Login")
+        self.login_button = QPushButton("Open LinkedIn & Log in")
         self.login_button.clicked.connect(self.start_open_linkedin_thread)  # ✅ Runs on a separate thread
         layout.addWidget(self.login_button)
 

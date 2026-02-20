@@ -60,6 +60,8 @@ class JobSearchWorker(QObject):
             self.results_ready.emit(sorted_results)  # ✅ Emit sorted results to UI
 
         except Exception as e:
-            logger.error(f"❌ Error during job search: {e}")
+            logger.error(f"Error during job search: {e}", exc_info=True)
+            # Always emit so the UI can show the popup (e.g. empty or error state)
+            self.results_ready.emit([])
         finally:
-            self.finished.emit()  # ✅ Notify that processing is finished
+            self.finished.emit()

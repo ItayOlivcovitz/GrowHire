@@ -1,73 +1,110 @@
-
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QHBoxLayout, QPushButton
+from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QPushButton,
+    QLabel,
+    QScrollArea,
+    QFrame,
+)
+from PySide6.QtCore import QThread, Qt
+from PySide6.QtGui import QFont
 from app.gui.panels.actions_panel import ActionsPanel
 from app.gui.panels.job_search_panel import JobSearchPanel
 from app.gui.panels.job_actions_panel import JobActionsPanel
-from app.gui.job_results_popup import JobResultsPopup  # ✅ Import JobResultsPopup
+from app.gui.job_results_popup import JobResultsPopup
 from app.gui.workers.feed_scroller_worker import FeedScrollWorker
 from app.gui.panels.view_results_panel import ViewResultsPanel
+from app.gui.panels.debugging_panel import DebuggingPanel
 from app.services.grow_hire_bot import GrowHireBot
 from app.gui.panels.get_connected_panel import GetConnectedPanel
-from PySide6.QtCore import QThread
+from app.gui.styles import COLORS, get_header_style
 
 import logging
 
 logger = logging.getLogger(__name__)
 
+
 class GrowHireGUI(QWidget):
-    """Main Window for GrowHire"""
+    """Main Window for GrowHire."""
 
     def __init__(self, growhire_bot: GrowHireBot):
         super().__init__()
         self.growhire_bot = growhire_bot
         self.feed_scraper = self.growhire_bot.feed_scraper
-        self.feed_scroller_thread = None  # ✅ Thread for feed scrolling
-
-        # ✅ Define job results pop-up BEFORE calling initUI
+        self.feed_scroller_thread = None
         self.job_results_popup = JobResultsPopup(self)
-
         self.initUI()
 
     def initUI(self):
         """Initialize the main UI layout."""
-        self.setWindowTitle("GrowHire - LinkedIn Job Automation")
-        self.setGeometry(300, 200, 750, 750)
-        layout = QVBoxLayout()
+        self.setWindowTitle("GrowHire — LinkedIn Job Automation")
+        self.setGeometry(280, 160, 820, 820)
+        self.setMinimumSize(520, 520)
 
-        # ✅ Actions Section
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(24, 24, 24, 24)
+
+        # Header
+        header = QLabel("GrowHire")
+        header.setStyleSheet(get_header_style())
+        header.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        main_layout.addWidget(header)
+
+        subtitle = QLabel("LinkedIn job search with AI-powered match scoring")
+        subtitle.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 13px; padding-bottom: 8px;")
+        main_layout.addWidget(subtitle)
+
+        # Scroll area for panels so everything fits on small screens
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        scroll_content = QWidget()
+        layout = QVBoxLayout(scroll_content)
+        layout.setSpacing(16)
+        layout.setContentsMargins(0, 8, 0, 0)
+
         self.actions_panel = ActionsPanel(self.growhire_bot)
         layout.addWidget(self.actions_panel)
 
-        # ✅ Feed Scroller Section
-        self.feed_scroller_box = QGroupBox("📜 Feed Scroller")
+        self.feed_scroller_box = QGroupBox("Feed Scroller")
         feed_scroller_layout = QHBoxLayout()
-        self.start_scroller_button = QPushButton("▶ Start Scroller")
+        self.start_scroller_button = QPushButton("Start Scroller")
         self.start_scroller_button.clicked.connect(self.start_feed_scroller)
         feed_scroller_layout.addWidget(self.start_scroller_button)
-        self.stop_scroller_button = QPushButton("⏹ Stop Scroller")
+        self.stop_scroller_button = QPushButton("Stop Scroller")
         self.stop_scroller_button.clicked.connect(self.stop_feed_scroller)
         self.stop_scroller_button.setEnabled(False)
         feed_scroller_layout.addWidget(self.stop_scroller_button)
         self.feed_scroller_box.setLayout(feed_scroller_layout)
         layout.addWidget(self.feed_scroller_box)
 
-        # ✅ Get Connected Section (new panel)
         self.get_connected_panel = GetConnectedPanel(self.growhire_bot)
         layout.addWidget(self.get_connected_panel)
 
-        # ✅ Job Search Section
         self.job_search_panel = JobSearchPanel(self.growhire_bot)
         layout.addWidget(self.job_search_panel)
 
-        # ✅ Job Actions Section (Pass JobResultsPopup and JobSearchPanel)
-        self.job_actions_panel = JobActionsPanel(self.growhire_bot, self.job_results_popup, self.job_search_panel)
+        self.job_actions_panel = JobActionsPanel(
+            self.growhire_bot, self.job_results_popup, self.job_search_panel
+        )
         layout.addWidget(self.job_actions_panel)
 
-        # ✅ View Results Section
         self.view_results_panel = ViewResultsPanel(self.growhire_bot)
         layout.addWidget(self.view_results_panel)
 
-        self.setLayout(layout)
+        self.debugging_panel = DebuggingPanel(self.growhire_bot)
+        layout.addWidget(self.debugging_panel)
+
+        layout.addStretch()
+        scroll.setWidget(scroll_content)
+        main_layout.addWidget(scroll)
+
+        self.setLayout(main_layout)
 
 
 

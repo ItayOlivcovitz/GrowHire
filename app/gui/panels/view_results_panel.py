@@ -9,7 +9,7 @@ class ViewResultsPanel(QGroupBox):
     """Panel with two buttons to view all job descriptions and all LinkedIn posts."""
 
     def __init__(self, growhire_bot):
-        super().__init__("📋 View Results")
+        super().__init__("View Results")
         self.growhire_bot = growhire_bot
         self.initUI()
 
@@ -32,7 +32,7 @@ class ViewResultsPanel(QGroupBox):
         """Opens a popup that displays all job descriptions from the database."""
         try:
             popup = AllJobResultsPopup()
-            popup.exec_()  # Show the popup as a modal dialog
+            popup.exec()
         except Exception as e:
             logger.error(f"Error opening job descriptions popup: {e}")
 
@@ -40,6 +40,6 @@ class ViewResultsPanel(QGroupBox):
         """Opens a popup that displays all LinkedIn posts from the database."""
         try:
             popup = AllLinkedInPostsPopup()
-            popup.exec_()  # Show the popup as a modal dialog
+            popup.exec()
         except Exception as e:
             logger.error(f"Error opening LinkedIn posts popup: {e}")

@@ -24,7 +24,7 @@ class GetConnectedPanel(QGroupBox):
         Expects 'growhire_bot' to be an instance of GrowHireBot,
         which has a 'get_connected' attribute (an instance of GetConnectedService).
         """
-        super().__init__("🤝 Get Connected")
+        super().__init__("Get Connected")
         self.growhire_bot = growhire_bot
         self.paused = False  # Initial pause state
         self.initUI()
@@ -35,7 +35,7 @@ class GetConnectedPanel(QGroupBox):
         # Search field for team leaders or other people
         self.people_search_field = QLineEdit()
         self.people_search_field.setPlaceholderText("Search for team leaders or people...")
-        layout.addWidget(QLabel("🔎 Search People:"))
+        layout.addWidget(QLabel("Search People"))
         layout.addWidget(self.people_search_field)
 
         # Drop-down for Number of Pages (1-10, default: 1)

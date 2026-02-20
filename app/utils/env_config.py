@@ -27,6 +27,7 @@ class EnvConfigLoader:
         openai_api_key = os.getenv("OPENAI_API_KEY")
         gemini_api_key = os.getenv("GEMINI_API_KEY")
         resume_path = os.getenv("RESUME_PATH")  # ✅ Load resume path
+        debug_apply_api_url = os.getenv("DEBUG_APPLY_API_URL", "").strip()  # Optional: Apply test POST target
 
         if linkedin_email and linkedin_password:
             logging.info("✅ LinkedIn credentials loaded from .env.")

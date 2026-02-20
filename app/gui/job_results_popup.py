@@ -33,7 +33,7 @@ class JobResultsPopup(QDialog):
 
 
         super().__init__(parent)
-        self.setWindowTitle("📋 Job Search Results")
+        self.setWindowTitle("Job Search Results")
         self.setGeometry(200, 100, 1400, 750)  # Popup size
         self.setMinimumSize(400, 300)  # Prevent negative sizes
         
@@ -141,8 +141,11 @@ class JobResultsPopup(QDialog):
             score_item = QTableWidgetItem(str(score_int))
             score_item.setBackground(color)
 
-            job_url_button = QPushButton("🔗 Open Job")
-            job_url_button.setStyleSheet("color: blue; text-decoration: underline; background: transparent; border: none;")
+            job_url_button = QPushButton("Open Job")
+            job_url_button.setStyleSheet(
+                "QPushButton { background: transparent; color: #0a66c2; border: none; font-weight: 600; }"
+                "QPushButton:hover { color: #004182; text-decoration: underline; }"
+            )
             job_url_button.setCursor(Qt.PointingHandCursor)
             job_url_button.clicked.connect(lambda checked, url=job_url: self.open_job(url))
 

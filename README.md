@@ -100,6 +100,7 @@ GrowHire/
    RESUME_PATH=/app/resume/Resume.pdf
    DATABASE_URL=sqlite:///growhire.db
    AI_CHAT_SERVICE_URL= #Ignore - keep empty
+   DEBUG_APPLY_API_URL= # Optional - URL to POST apply popup JSON (Debugging panel)
    ```
    
    **Note**: You can choose which AI provider to use (OpenAI, Gemini, or ChatService) directly from the UI dropdown in the Job Search panel. Make sure to add the corresponding API key(s) to your `.env` file.

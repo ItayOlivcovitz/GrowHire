@@ -13,7 +13,7 @@ class JobActionsPanel(QGroupBox):
     """Panel for job search and evaluation actions."""
     
     def __init__(self, growhire_bot, job_results_table, job_search_panel):
-        super().__init__("📌 Job Actions")
+        super().__init__("Job Actions")
         self.growhire_bot = growhire_bot
         self.job_results_table = job_results_table  # ✅ Store reference to JobResultsTable
         self.job_search_panel = job_search_panel
@@ -25,14 +25,13 @@ class JobActionsPanel(QGroupBox):
         """Initialize UI components."""
         layout = QVBoxLayout()
 
-        # ✅ Search Jobs Button
-        self.search_button = QPushButton("🔍 Search Jobs")
+        self.search_button = QPushButton("Search Jobs")
         self.search_button.clicked.connect(self.start_search_thread)  # ✅ Runs in a separate thread
         layout.addWidget(self.search_button)
 
         # ✅ Page Selector
         pages_layout = QHBoxLayout()
-        pages_label = QLabel("📄 Pages:")
+        pages_label = QLabel("Pages:")
         self.pages_dropdown = QComboBox()
         self.pages_dropdown.addItems([str(i) for i in range(1, 11)])  # Options: 1 to 10
         self.pages_dropdown.setCurrentIndex(0)  # Default: 1 Page
@@ -91,14 +90,18 @@ class JobActionsPanel(QGroupBox):
 
     def show_results_popup(self, job_results):
         """Opens the job results popup and updates the results."""
-        logger.info("📋 Job search completed, displaying results.")
+        logger.info("Job search completed, displaying results.")
 
-        # ✅ Prevent multiple popups by checking if one is already open
+        # Prevent multiple popups
         if hasattr(self, "job_results_popup") and self.job_results_popup.isVisible():
-            logger.warning("⚠️ Job results popup is already open.")
+            logger.warning("Job results popup is already open.")
             return
 
-        # ✅ Create and show the popup
-        self.job_results_popup = JobResultsPopup(self.growhire_bot)
-        self.job_results_popup.update_results(job_results)
-        self.job_results_popup.exec()  # ✅ Show as modal dialog
+        # Parent: main window so dialog stays on top and is modal to it
+        parent_window = self.window()
+        self.job_results_popup = JobResultsPopup(self.growhire_bot, parent=parent_window)
+        self.job_results_popup.update_results(job_results or [])
+        self.job_results_popup.show()
+        self.job_results_popup.raise_()
+        self.job_results_popup.activateWindow()
+        self.job_results_popup.exec()
