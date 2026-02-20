@@ -17,11 +17,32 @@ class GrowHireBot:
         
         self.linkedin_navigator = LinkedInNavigator()  # Start LinkedInNavigator (Creates a WebDriver)
         self._driver = self.linkedin_navigator.driver  # 🔹 Extract WebDriver instance
-        self._job_scraper = JobScraper(self._driver)  # 🔹 Pass the WebDriver to JobScraper
+        self.ai_provider = "openai"  # Default AI provider
+        self._job_scraper = JobScraper(self._driver, ai_provider=self.ai_provider)  # 🔹 Pass the WebDriver to JobScraper
         self._job_storage = JobStorage()
         self._job_pdf_reader = PDFReader() 
         self.feed_scraper = FeedScraper(self._driver)  # ✅ Loads keywords from 'keywords.txt' if no list is provided
         self.get_connected = GetConnectedService(self._driver)
+    
+    def set_ai_provider(self, provider: str):
+        """
+        Sets the AI provider and recreates the JobScraper with the new provider.
+        
+        Args:
+            provider (str): The AI provider to use. Valid values: "openai", "gemini", "chatservice"
+        """
+        provider_lower = provider.lower()
+        valid_providers = ["openai", "gemini", "chatservice"]
+        
+        if provider_lower not in valid_providers:
+            logger.warning(f"Invalid AI provider '{provider}'. Valid options: {valid_providers}. Keeping current provider: {self.ai_provider}")
+            return
+        
+        if provider_lower != self.ai_provider:
+            logger.info(f"Changing AI provider from '{self.ai_provider}' to '{provider_lower}'")
+            self.ai_provider = provider_lower
+            self._job_scraper = JobScraper(self._driver, ai_provider=self.ai_provider)
+            logger.info(f"AI provider changed successfully to '{self.ai_provider}'")
         
     def search_jobs(self, job_title, location, filters=None):
         """Triggers job search through LinkedInNavigator."""

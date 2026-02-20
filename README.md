@@ -24,9 +24,10 @@ GrowHire leverages:
 
 - Feed Scroller that saves posts with keywords in it.
 - LinkedIn automation for job searching.
-- An AI component (OpenAI's ChatGPT) to provide a detailed analysis of each job description.
+- An AI component (OpenAI ChatGPT, Google Gemini, or ChatService) to provide a detailed analysis of each job description.
 - A match score in percentage to gauge how closely your resume matches the job.
 - Docker-based MySQL for reliable and portable database management.
+- UI-based AI provider selection - choose between OpenAI, Gemini, or ChatService directly from the interface.
 
 ---
 
@@ -39,7 +40,9 @@ GrowHire/
 │   │   ├── workers/         # GUI worker components
 │   │   └── panels/          # GUI panels/components
 │   ├── services/            # Core business logic and integrations
+│   │   ├── chatGpt/         # OpenAI ChatGPT service
 │   │   ├── chatService/     # Chat service functionality
+│   │   ├── gemini/          # Google Gemini service
 │   │   ├── feedScraper/     # Web scraping for job feeds
 │   │   ├── jobScraper/      # Job scraping functionality
 │   │   ├── linkedinNavigator/ # LinkedIn navigation automation
@@ -68,11 +71,11 @@ GrowHire/
 ## Features
 
 1. **LinkedIn Automation**: Automates job searches on LinkedIn, allowing you to fetch job data in bulk.
-2. **AI Analysis (ChatGPT)**: Leverages the OpenAI ChatGPT model to provide detailed insights into each job description.
+2. **AI Analysis (Multiple Providers)**: Choose between OpenAI ChatGPT, Google Gemini, or ChatService to provide detailed insights into each job description. Selection can be made via the UI dropdown.
 3. **Resume Matching**: Compares your resume with each job posting, returning a match score (in percentage).
 4. **Dockerized MySQL**: Spins up a MySQL container for easy deployment and portability.
 5. **Data Storage**: Stores all job descriptions, AI responses, and match scores in the MySQL database.
-6. **GUI**: Provides a user-friendly interface to manage job search parameters.
+6. **GUI**: Provides a user-friendly interface to manage job search parameters and AI provider selection.
 
 ---
 
@@ -93,10 +96,13 @@ GrowHire/
    LINKEDIN_EMAIL=your_email@example.com
    LINKEDIN_PASSWORD=your_password
    OPENAI_API_KEY=your_openai_api_key
+   GEMINI_API_KEY=your_gemini_api_key  # Optional - only needed if using Gemini
    RESUME_PATH=/app/resume/Resume.pdf
    DATABASE_URL=sqlite:///growhire.db
    AI_CHAT_SERVICE_URL= #Ignore - keep empty
    ```
+   
+   **Note**: You can choose which AI provider to use (OpenAI, Gemini, or ChatService) directly from the UI dropdown in the Job Search panel. Make sure to add the corresponding API key(s) to your `.env` file.
 
 3. **Install Python Dependencies:**  
 
@@ -129,6 +135,7 @@ If you don't have an OpenAI Key, contact me and I will provide you with the `AI_
    LINKEDIN_EMAIL=your_email@example.com
    LINKEDIN_PASSWORD=your_password
    OPENAI_API_KEY= #Ignore - keep empty
+   GEMINI_API_KEY= #Optional - only needed if using Gemini
    RESUME_PATH=/app/resume/Resume.pdf
    DATABASE_URL= sqlite:///growhire.db
    AI_CHAT_SERVICE_URL= the provided URL here
@@ -165,6 +172,7 @@ If you don't have an OpenAI Key, contact me and I will provide you with the `AI_
    LINKEDIN_EMAIL=your_email@example.com
    LINKEDIN_PASSWORD=your_password
    OPENAI_API_KEY= #Ignore - keep empty
+   GEMINI_API_KEY= #Optional - only needed if using Gemini
    RESUME_PATH=/app/resume/Resume.pdf
    DATABASE_URL= mysql://root:root@localhost:3306/growhire
    AI_CHAT_SERVICE_URL= the provided URL here
@@ -180,7 +188,11 @@ If you don't have an OpenAI Key, contact me and I will provide you with the `AI_
 
 - **Disclaimer**: This tool is provided as-is, and I am not responsible for any consequences resulting from its use. Users should ensure they comply with LinkedIn's policies and terms of service when using GrowHire.
 
+- **AI Provider Selection**: You can choose between OpenAI ChatGPT, Google Gemini, or ChatService directly from the UI dropdown in the Job Search panel. Make sure to add the corresponding API key(s) to your `.env` file.
+
 - **Chat Service**: The Chat Service is a locally hosted application on my personal computer. Its purpose is to allow users to utilize GrowHire's AI-driven job analysis features **without** requiring their own OpenAI API key.
+
+- **Gemini API**: To use Google Gemini, you'll need to obtain a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey) and add it to your `.env` file as `GEMINI_API_KEY`.
 
 ---
 

@@ -25,6 +25,7 @@ class EnvConfigLoader:
         linkedin_email = os.getenv("LINKEDIN_EMAIL")
         linkedin_password = os.getenv("LINKEDIN_PASSWORD")
         openai_api_key = os.getenv("OPENAI_API_KEY")
+        gemini_api_key = os.getenv("GEMINI_API_KEY")
         resume_path = os.getenv("RESUME_PATH")  # ✅ Load resume path
 
         if linkedin_email and linkedin_password:
@@ -36,6 +37,11 @@ class EnvConfigLoader:
             logging.info("✅ OpenAI API Key loaded from .env.")
         else:
             logging.critical("🚨 Failed to load OpenAI API Key. Check your .env file.")
+
+        if gemini_api_key:
+            logging.info("✅ Gemini API Key loaded from .env.")
+        else:
+            logging.warning("⚠️ GEMINI_API_KEY not found in .env file. Gemini API will not be available.")
 
         if resume_path:
             logging.info(f"✅ Resume path loaded: {resume_path} from env.")

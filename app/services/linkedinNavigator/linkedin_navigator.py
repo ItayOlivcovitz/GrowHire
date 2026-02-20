@@ -53,7 +53,7 @@ class LinkedInNavigator:
 
             if is_docker:
                 logger.info("🛠️ Running inside Docker. Applying Docker-specific Chrome settings...")
-                print("🚢 Running inside Docker!")
+                logger.info("Running inside Docker!")
                 options.add_argument("--no-sandbox")  # Bypass OS security model
                 options.add_argument("--disable-dev-shm-usage")  # Prevent crashes in low-memory environments
                 options.add_argument("--disable-gpu")  # Disable GPU hardware acceleration
@@ -70,7 +70,7 @@ class LinkedInNavigator:
                 os.chmod(unique_data_dir, 0o777)  # Ensure it is writable
 
             else:
-                print("🖥️ Running locally!")
+                logger.info("Running locally!")
 
             # ✅ Use WebDriver Manager to automatically download the correct driver
             driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)

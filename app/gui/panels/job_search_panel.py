@@ -24,6 +24,13 @@ class JobSearchPanel(QGroupBox):
         layout.addWidget(QLabel("📍 Job Location:"))
         layout.addWidget(self.location_field)
 
+        # ✅ AI Provider Dropdown
+        self.ai_provider_dropdown = QComboBox()
+        self.ai_provider_dropdown.addItems(["OpenAI", "Gemini", "ChatService"])
+        self.ai_provider_dropdown.setCurrentIndex(0)  # Default: OpenAI
+        layout.addWidget(QLabel("🤖 AI Provider:"))
+        layout.addWidget(self.ai_provider_dropdown)
+
         # ✅ Date Posted Dropdown
         self.date_posted_dropdown = QComboBox()
         self.date_posted_dropdown.addItems(["Any Time", "Past 24 hours", "Past Week", "Past Month"])
@@ -71,3 +78,18 @@ class JobSearchPanel(QGroupBox):
         
         filters["easy_apply"] = self.easy_apply_checkbox.isChecked()
         return filters
+    
+    def get_ai_provider(self):
+        """
+        Returns the selected AI provider as a lowercase string.
+        
+        Returns:
+            str: "openai", "gemini", or "chatservice"
+        """
+        provider_map = {
+            "OpenAI": "openai",
+            "Gemini": "gemini",
+            "ChatService": "chatservice"
+        }
+        selected_text = self.ai_provider_dropdown.currentText()
+        return provider_map.get(selected_text, "openai")  # Default to openai if not found

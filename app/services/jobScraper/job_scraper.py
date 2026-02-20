@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from app.services.chatGpt import chat_gpt
 from app.services.chatService import chat_service
+from app.services.gemini import gemini_service
 from app.services.pdfReader.pdf_reader import PDFReader
 
 
@@ -18,21 +19,38 @@ logger = logging.getLogger(__name__)
 
 class JobScraper:
     """Extracts job details from LinkedIn."""
-    def __init__(self, driver): 
+    def __init__(self, driver, ai_provider=None): 
             self.driver = driver
             self.resume_path = os.getenv("RESUME_PATH", "/resume.pdf")
 
-            # Check if CHAT_SERVICE is set and not empty
-            chat_service_env = os.getenv("AI_CHAT_SERVICE_URL", "").strip()
-
-            if chat_service_env:
-                self.chat_gpt =  chat_service.ChatService()
-
+            # Initialize AI service based on provider parameter or env vars
+            if ai_provider:
+                # Use the provided AI provider
+                ai_provider_lower = ai_provider.lower()
+                if ai_provider_lower == "openai":
+                    self.chat_gpt = chat_gpt.ChatGPT()
+                elif ai_provider_lower == "gemini":
+                    self.chat_gpt = gemini_service.GeminiService()
+                elif ai_provider_lower == "chatservice":
+                    self.chat_gpt = chat_service.ChatService()
+                else:
+                    logger.warning(f"Unknown AI provider '{ai_provider}', falling back to env-based logic.")
+                    self._init_ai_from_env()
             else:
-                self.chat_gpt = chat_gpt.ChatGPT()
+                # Fall back to env-based logic for backward compatibility
+                self._init_ai_from_env()
 
             self.pdf_reader = PDFReader(self.resume_path)
             self.resume_text = self.pdf_reader.get_text()
+    
+    def _init_ai_from_env(self):
+        """Initialize AI service based on environment variables (backward compatibility)."""
+        chat_service_env = os.getenv("AI_CHAT_SERVICE_URL", "").strip()
+
+        if chat_service_env:
+            self.chat_gpt = chat_service.ChatService()
+        else:
+            self.chat_gpt = chat_gpt.ChatGPT()
 
     def read_prompt_template(self, file_path, resume_text, job_description):
         """Reads the prompt template from a file and formats it with resume and job description."""

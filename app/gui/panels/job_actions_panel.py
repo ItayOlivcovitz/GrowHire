@@ -55,6 +55,11 @@ class JobActionsPanel(QGroupBox):
         location = self.job_search_panel.location_field.text() or "Israel"
         filters = self.job_search_panel.get_filters()
 
+        # Get selected AI provider and set it in GrowHireBot
+        selected_ai_provider = self.job_search_panel.get_ai_provider()
+        self.growhire_bot.set_ai_provider(selected_ai_provider)
+        logger.info(f"🤖 Using AI provider: {selected_ai_provider}")
+
         # Log the filter values for debugging
         logger.info(f"🔍 Job search filters: {filters}")
 
